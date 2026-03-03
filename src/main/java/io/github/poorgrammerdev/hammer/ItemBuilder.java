@@ -1,19 +1,17 @@
 package io.github.poorgrammerdev.hammer;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeModifier;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.Repairable;
+import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
-import java.util.Arrays;
+import net.kyori.adventure.text.Component;
 
 /**
  * Utility class for easily creating custom items.
@@ -40,47 +38,20 @@ public class ItemBuilder {
         this(material, 1);
     }
 
-    public ItemBuilder setName(String name) {
-        meta.setDisplayName(name);
+    public ItemBuilder setName(final Component name) {
+        meta.displayName(name);
         return this;
     }
 
-    public ItemBuilder setLore(String... lore) {
-        meta.setLore(Arrays.asList(lore));
-        return this;
-    }
-
-    public ItemBuilder addItemFlags (ItemFlag... flags) {
-        meta.addItemFlags(flags);
-        return this;
+    public void setLore(final Component... lore) {
+        meta.lore(Arrays.asList(lore));
     }
 
     public ItemBuilder setCustomModelData (int data) {
-        meta.setCustomModelData(data);
+        final CustomModelDataComponent customModelData = meta.getCustomModelDataComponent();
+        customModelData.setFloats(List.of((float) data));
+        meta.setCustomModelDataComponent(customModelData);
         return this;
-    }
-
-    public ItemBuilder addEnchant (Enchantment enchantment, int level, boolean ignoreLevelRestriction) {
-        meta.addEnchant(enchantment, level, ignoreLevelRestriction);
-        return this;
-    }
-
-    public ItemBuilder setDamage(int damage) throws IllegalArgumentException {
-        if (meta instanceof Damageable) {
-            final Damageable damageable = (Damageable) meta;
-            damageable.setDamage(damage);
-            return this;
-        }
-        throw new IllegalArgumentException("Item does not have durability");
-    }
-
-    public ItemBuilder setRepairCost (int repairCost) throws IllegalArgumentException {
-        if (meta instanceof Repairable) {
-            final Repairable repairable = (Repairable) meta;
-            repairable.setRepairCost(repairCost);
-            return this;
-        }
-        throw new IllegalArgumentException("Item is not repairable");
     }
 
     public <T,Z> ItemBuilder setPersistentData(NamespacedKey key, PersistentDataType<T, Z> type, Z data) throws IllegalArgumentException {
@@ -89,11 +60,6 @@ public class ItemBuilder {
             return this;
         }
         throw new IllegalArgumentException("Item does not have PersistentDataContainer");
-    }
-
-    public ItemBuilder addAttributeModifier(Attribute attribute, AttributeModifier modifier) {
-        meta.addAttributeModifier(attribute, modifier);
-        return this;
     }
 
     public ItemStack build() {

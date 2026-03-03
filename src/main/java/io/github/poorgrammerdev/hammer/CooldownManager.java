@@ -57,46 +57,21 @@ public class CooldownManager {
 
     /**
      * Remove a player's remaining cooldown with their UUID
+     *
      * @param playerID player id
-     * @return previously stored cooldown (the point in time when the cooldown would've ended), or null if there was no cooldown
      */
-    public Instant removeCooldown(final UUID playerID) {
-        return this.cooldownMap.remove(playerID);
+    public void removeCooldown(final UUID playerID) {
+        this.cooldownMap.remove(playerID);
     }
 
     /**
      * Remove a player's remaining cooldown
+     *
      * @param player player to remove
-     * @return previously stored cooldown (the point in time when the cooldown would've ended), or null if there was no cooldown
      */
-    public Instant removeCooldown(final Player player) {
-        return this.removeCooldown(player.getUniqueId());
+    public void removeCooldown(final Player player) {
+        this.removeCooldown(player.getUniqueId());
     }
 
 
-    /**
-     * Gets the remaining time left before the player can use this again
-     * @param playerID player id
-     * @return duration until cooldown is over
-     */
-    public Duration getRemainingCooldown(final UUID playerID) {
-        final Instant cooldown = this.cooldownMap.getOrDefault(playerID, null);
-        final Instant now = Instant.now();
-
-        //Cooldown is present, return duration
-        if (cooldown != null && now.isBefore(cooldown)) return Duration.between(now, cooldown);
-
-        //No cooldown present or cooldown has passed
-        return Duration.ZERO;
-    }
-
-    /**
-     * Gets the remaining time left before the player can use this again
-     * @param player player to check
-     * @return duration until cooldown is over
-     */
-    public Duration getRemainingCooldown(final Player player) {
-        return this.getRemainingCooldown(player.getUniqueId());
-    }
-    
 }

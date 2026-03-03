@@ -33,7 +33,7 @@ public class FauxBlockDamage extends BukkitRunnable implements Listener {
      * <p>
      * To minimize constant heap allocations, the adjacentBlocks array is not reassigned
      * The existing values must be edited externally from the returned data object
-     * NOTE: The behaviour may be undefined if this is not done
+     * NOTE: The behavior may be undefined if this is not done
      * 
      * @param player the player using the hammer
      * @param centerBlock the center/target block the hammer is being used on
@@ -108,7 +108,7 @@ public class FauxBlockDamage extends BukkitRunnable implements Listener {
     /**
      * Core mechanism of this class
      * Displays the progressive breaking animation at the estimated speed
-     * until it reaches completion or is cancelled externally
+     * until it reaches completion or is canceled externally
      */
     @Override
     public void run() {
@@ -119,7 +119,7 @@ public class FauxBlockDamage extends BukkitRunnable implements Listener {
             //Calculate the estimated progress % and display to player
             final float progress = data.ticks * data.centerBlock.getBreakSpeed(player);
             for (int i = 0; i < data.adjacentCount; i++) {
-                player.sendBlockDamage(data.adjacentBlocks[i], Math.max(Math.min(progress, 1.0f), 0.0f), data.ids[i]);
+                player.sendBlockDamage(data.adjacentBlocks[i], Math.clamp(progress, 0.0f, 1.0f), data.ids[i]);
             }
 
             //If reached full progress, deactivate this player

@@ -8,7 +8,6 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
-import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -107,19 +106,15 @@ public class HammerMechanism implements Listener {
         if (player.isSneaking()) return;
 
         final EntityEquipment equipment = player.getEquipment();
-        if (equipment == null) return;
 
-        //Check if the tool is a hammer
         final ItemStack tool = equipment.getItemInMainHand();
-        if (!this.plugin.isHammer(tool)) return;
+        final CustomToolType toolType = this.plugin.getCustomToolType(tool);
+        if (toolType == null) return;
 
         final ItemMeta meta = tool.getItemMeta();
-        if (!(meta instanceof Damageable)) return;
+        if (!(meta instanceof Damageable damageableMeta)) return;
 
-        final Damageable damageableMeta = (Damageable) meta;
-
-        // Center block must be pickaxe-mine able
-        if (!canBlockActivateHammer(targetBlock, tool)) return;
+        if (!canBlockActivateAbility(targetBlock, tool, toolType)) return;
 
         // Get plane of blocks to break in
         final int planeIndex = getPlaneIndex(player, targetBlock);
@@ -129,7 +124,7 @@ public class HammerMechanism implements Listener {
         final float hardness = targetBlock.getType().getHardness() + this.hardnessBuffer;
 
         //Hammer information
-        final int unbreaking = damageableMeta.getEnchantLevel(Enchantment.DURABILITY);
+        final int unbreaking = damageableMeta.getEnchantLevel(Enchantment.UNBREAKING);
         final int maxDamage = tool.getType().getMaxDurability() - 1;
         int damage = damageableMeta.getDamage();
         
@@ -143,7 +138,7 @@ public class HammerMechanism implements Listener {
             targetBlock.getLocation(middleLocation);
             final Block adjacent = middleLocation.add(offset).getBlock();
 
-            if (isBlockHammerable(adjacent, tool, hardness)) {
+            if (isBlockAreaMineable(adjacent, tool, hardness, toolType)) {
                 //Break block -- do not drop items if dug in creative mode
                 adjacent.breakNaturally(!creativeMode ? tool : new ItemStack(Material.AIR));
 
@@ -165,7 +160,7 @@ public class HammerMechanism implements Listener {
             //Play SFX & VFX for tool breaking
             final World world = player.getWorld();
             world.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, SoundCategory.PLAYERS, 1.0f, 1.0f);
-            world.spawnParticle(Particle.ITEM_CRACK, player.getEyeLocation().subtract(0, 0.25, 0).add(player.getEyeLocation().getDirection().normalize().multiply(0.5f)), 15, 0.05, 0.01, 0.05, 0.1, tool);
+            world.spawnParticle(Particle.ITEM, player.getEyeLocation().subtract(0, 0.25, 0).add(player.getEyeLocation().getDirection().normalize().multiply(0.5f)), 15, 0.05, 0.01, 0.05, 0.1, tool);
 
             //Break tool
             tool.setAmount(tool.getAmount() - 1);
@@ -190,13 +185,12 @@ public class HammerMechanism implements Listener {
         final Player player = event.getPlayer();
         if (player.isSneaking()) return;
 
-        // Tool must be a hammer
         final ItemStack tool = event.getItemInHand();
-        if (!this.plugin.isHammer(tool)) return;
+        final CustomToolType toolType = this.plugin.getCustomToolType(tool);
+        if (toolType == null) return;
 
-        // Center block must be pickaxe-mine able
         final Block targetBlock = event.getBlock();
-        if (!canBlockActivateHammer(targetBlock, tool)) return;
+        if (!canBlockActivateAbility(targetBlock, tool, toolType)) return;
 
         // Get plane of blocks the player wants to break
         final int planeIndex = getPlaneIndex(player, targetBlock);
@@ -216,7 +210,7 @@ public class HammerMechanism implements Listener {
             location.add(offset);
 
             //Calculate block location if hammerable
-            if (isBlockHammerable(location.getBlock(), tool, hardness)) {
+            if (isBlockAreaMineable(location.getBlock(), tool, hardness, toolType)) {
                 if (data.adjacentBlocks[i] == null) {
                     data.adjacentBlocks[i] = location.clone();
                 }
@@ -259,22 +253,12 @@ public class HammerMechanism implements Listener {
         if (blockFace == null) return -1;
 
         //Get the plane of blocks to break
-        switch (blockFace) {
-            case NORTH:
-            case SOUTH:
-                return NORTH_SOUTH;
-
-            case EAST:
-            case WEST:
-                return EAST_WEST;
-
-            case UP:
-            case DOWN:
-                return UP_DOWN;
-
-            default:
-                return -1;
-        }
+        return switch (blockFace) {
+            case NORTH, SOUTH -> NORTH_SOUTH;
+            case EAST, WEST -> EAST_WEST;
+            case UP, DOWN -> UP_DOWN;
+            default -> -1;
+        };
     }
 
     /**
@@ -284,9 +268,14 @@ public class HammerMechanism implements Listener {
      * @param centerHardness Hardness value to compare against (with the offset already added)
      * @return if the adjacent block can be broken by the hammer
      */
-    private boolean isBlockHammerable(final Block block, final ItemStack tool, final float centerHardness) {
+    private boolean isBlockAreaMineable(
+        final Block block,
+        final ItemStack tool,
+        final float centerHardness,
+        final CustomToolType toolType
+    ) {
         return (
-            canBlockActivateHammer(block, tool) && // Base requirements 
+            canBlockActivateAbility(block, tool, toolType) &&
             block.getType().getHardness() <= centerHardness // Hardness value is within range of the center block
         );
     }
@@ -297,10 +286,9 @@ public class HammerMechanism implements Listener {
      * @param tool Hammer
      * @return if the block can activate the hammer's breaking ability
      */
-    private boolean canBlockActivateHammer(final Block block, final ItemStack tool) {
+    private boolean canBlockActivateAbility(final Block block, final ItemStack tool, final CustomToolType toolType) {
         return (
-            Tag.MINEABLE_PICKAXE.isTagged(block.getType()) && // Pickaxe-minable block
-            block.getBlockData().isPreferredTool(tool) && // This tier tool can mine it (e.g. stone tools cannot mine diamond ore)
+            toolType.canMine(block, tool) &&
             block.getType().getHardness() != Material.BEDROCK.getHardness() // Safety check - cannot be equal to bedrock's hardness
         );
     }

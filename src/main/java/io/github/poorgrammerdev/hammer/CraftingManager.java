@@ -5,7 +5,6 @@ import java.util.Iterator;
 
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Tag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
 import org.bukkit.inventory.RecipeChoice;
@@ -25,29 +24,19 @@ public class CraftingManager implements Listener {
         this.plugin = plugin;
     }
 
-    /**
-     * Registers all craftable hammers
-     */
-    public HashMap<Material, NamespacedKey> registerAllRecipes() {
+    public HashMap<Material, NamespacedKey> registerRecipes(final CustomToolType toolType) {
         final HashMap<Material, NamespacedKey> ret = new HashMap<>();
+        final HashMap<RecipeChoice, Material> craftMap = this.getMineralsToToolsMap(toolType);
 
-        //Get the mapping from the material to the pickaxe
-        final HashMap<RecipeChoice, Material> craftMap = getMineralsToToolsMap();
-
-        //Loops through every defined tool mineral tier and creates a hammer for each tier
         for (final RecipeChoice choice : craftMap.keySet()) {
             final Material resultType = craftMap.get(choice);
 
             final String tier = resultType.name().split("_")[0];
-            final NamespacedKey key = new NamespacedKey(plugin, tier.toLowerCase() + "_hammer");
+            final NamespacedKey key = new NamespacedKey(plugin, tier.toLowerCase() + "_" + toolType.getKeySuffix());
 
-            final ItemStack hammer = plugin.createHammer(resultType);
-            final ShapedRecipe recipe = new ShapedRecipe(key, hammer);
-            recipe.shape(
-                "***",
-                "*|*",
-                " | "
-            );
+            final ItemStack customTool = plugin.createCustomTool(resultType, toolType);
+            final ShapedRecipe recipe = new ShapedRecipe(key, customTool);
+            recipe.shape(toolType.getRecipeShape());
 
             recipe.setIngredient('*', choice);
             recipe.setIngredient('|', Material.STICK);
@@ -60,36 +49,40 @@ public class CraftingManager implements Listener {
         return ret;
     }
 
-    /**
-     * Gets a map of material choices to craft a pickaxe to the pickaxe it crafts
-     */
-    private HashMap<RecipeChoice, Material> getMineralsToToolsMap() {
+    private HashMap<RecipeChoice, Material> getMineralsToToolsMap(final CustomToolType toolType) {
         final HashMap<RecipeChoice, Material> craftMap = new HashMap<>();
-
-        //This iterates through all the registered recipes in the server and finds only the pickaxe recipes
         final Iterator<Recipe> iterator = this.plugin.getServer().recipeIterator();
         while (iterator.hasNext()) {
             final Recipe recipe = iterator.next();
 
-            //Filtering out by pickaxe recipes
-            recipe.getResult();
-            if (!Tag.ITEMS_PICKAXES.isTagged(recipe.getResult().getType()) || !(recipe instanceof ShapedRecipe)) continue;
+            if (!(recipe instanceof ShapedRecipe shaped)) continue;
+            if (!toolType.matchesBaseTool(recipe.getResult().getType())) continue;
 
-            //Only default recipes are read, ignoring custom plugin recipes
-            final ShapedRecipe shaped = (ShapedRecipe) recipe;
             if (!shaped.getKey().getNamespace().equals(NamespacedKey.MINECRAFT)) continue;
-                
-            craftMap.put(
-                //Here we're getting the first item in the recipe (top left corner), which by the pickaxe recipe is the material comprising the head of the pickaxe
-                //Since ShapedRecipes' shapes are denoted by character, we first get the char and then lookup the RecipeChoice
-                shaped.getChoiceMap().get(shaped.getShape()[0].charAt(0)),
 
-                //Then we pair the mineral with the tool of the same type in the returned map
-                shaped.getResult().getType()
-            );
+            final RecipeChoice headChoice = this.findHeadChoice(shaped);
+            if (headChoice == null) continue;
+
+            craftMap.put(headChoice, shaped.getResult().getType());
         }
 
         return craftMap;
+    }
+
+    private RecipeChoice findHeadChoice(final ShapedRecipe recipe) {
+        for (final String row : recipe.getShape()) {
+            for (int i = 0; i < row.length(); ++i) {
+                final char key = row.charAt(i);
+                if (key == ' ') continue;
+
+                final RecipeChoice choice = recipe.getChoiceMap().get(key);
+                if (choice == null || choice.test(new ItemStack(Material.STICK))) continue;
+
+                return choice;
+            }
+        }
+
+        return null;
     }
 
 }

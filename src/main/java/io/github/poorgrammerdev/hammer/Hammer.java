@@ -1,23 +1,23 @@
 package io.github.poorgrammerdev.hammer;
 
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.Random;
 
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Tag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import net.md_5.bungee.api.ChatColor;
-
 public class Hammer extends JavaPlugin {
     private final NamespacedKey hammerKey;
+    private final NamespacedKey spadeKey;
     
     public Hammer() {
         this.hammerKey = new NamespacedKey(this, "is_hammer");
+        this.spadeKey = new NamespacedKey(this, "is_spade");
     }
 
     @Override
@@ -27,7 +27,9 @@ public class Hammer extends JavaPlugin {
         this.saveConfig();
 
         final Random random = new Random();
-        final HashMap<Material, NamespacedKey> recipeKeyMap = new CraftingManager(this).registerAllRecipes();
+        final CraftingManager craftingManager = new CraftingManager(this);
+        final HashMap<Material, NamespacedKey> hammerRecipeKeyMap = craftingManager.registerRecipes(CustomToolType.HAMMER);
+        final HashMap<Material, NamespacedKey> spadeRecipeKeyMap = craftingManager.registerRecipes(CustomToolType.SPADE);
 
         final FauxBlockDamage fauxBlockDamage = new FauxBlockDamage(this, random);
         if (fauxBlockDamage.isEnabled()) {
@@ -42,69 +44,68 @@ public class Hammer extends JavaPlugin {
 
         this.getServer().getPluginManager().registerEvents(new HammerMechanism(this, random, fauxBlockDamage), this);
         this.getServer().getPluginManager().registerEvents(new RepairingManager(this), this);
-        this.getServer().getPluginManager().registerEvents(new RecipeManager(recipeKeyMap), this);
+        this.getServer().getPluginManager().registerEvents(new RecipeManager(hammerRecipeKeyMap, spadeRecipeKeyMap), this);
 
-        GiveCommand giveCommand = new GiveCommand(this, recipeKeyMap);
-        this.getCommand("givehammer").setExecutor(giveCommand);
-        this.getCommand("givehammer").setTabCompleter(giveCommand);
+        GiveCommand giveCommand = new GiveCommand(this, hammerRecipeKeyMap, spadeRecipeKeyMap);
+        Objects.requireNonNull(this.getCommand("givehammer")).setExecutor(giveCommand);
+        Objects.requireNonNull(this.getCommand("givehammer")).setTabCompleter(giveCommand);
     }
 
-    @Override
-    public void onDisable() {
-    }
-    
-    /**
-     * @return the NamespacedKey for validating that an item is a hammer
-     */
-    public NamespacedKey getHammerKey() {
-        return this.hammerKey;
+    public boolean isCustomTool(final ItemStack item) {
+        return this.getCustomToolType(item) != null;
     }
 
-    /**
-     * Checks if an item is a hammer or not
-     * @return if the item is a hammer or not
-     */
-    public boolean isHammer(ItemStack item) {
+    public boolean isCustomTool(final ItemStack item, final CustomToolType type) {
         if (item == null || item.getType() == Material.AIR) return false;
         
         final ItemMeta meta = item.getItemMeta();
         if (meta == null) return false;
 
-        return (
-            meta.getPersistentDataContainer().getOrDefault(this.getHammerKey(), PersistentDataType.BOOLEAN, false)
-        );
+        return meta.getPersistentDataContainer().getOrDefault(this.getToolKey(type), PersistentDataType.BOOLEAN, false);
     }
 
-    /**
-     * Creates a new hammer item from the base pickaxe material
-     * @param pickaxe Base item to use for the hammer
-     * @return Hammer item
-     */
-    public ItemStack createHammer(Material pickaxe) {
-        if (!Tag.ITEMS_PICKAXES.isTagged(pickaxe)) return null;
-        final String displayName = getHammerName(pickaxe);
+    public CustomToolType getCustomToolType(final ItemStack item) {
+        for (final CustomToolType type : CustomToolType.values()) {
+            if (this.isCustomTool(item, type)) {
+                return type;
+            }
+        }
 
-        final ItemBuilder builder = new ItemBuilder(pickaxe)
+        return null;
+    }
+
+    public ItemStack createCustomTool(final Material baseTool, final CustomToolType type) {
+        if (!type.matchesBaseTool(baseTool)) return null;
+        final String displayName = this.getToolName(baseTool, type);
+
+        final ItemBuilder builder = new ItemBuilder(baseTool)
             .setCustomModelData(this.getConfig().getInt("custom_model_data", 101))
-            .setName(ChatColor.RESET + displayName)
-            .setPersistentData(this.getHammerKey(), PersistentDataType.BOOLEAN, true);
+            .setName(Text.miniMessage("<!italic><white>" + displayName))
+            .setPersistentData(this.getToolKey(type), PersistentDataType.BOOLEAN, true);
         
         if (this.getConfig().getBoolean("write_description", true)) {
-            //The reason for setting the lore too is, because the player can rename the tool
-            builder.setLore(ChatColor.GRAY + displayName);
+            // The lore still identifies the tool after players rename it.
+            builder.setLore(Text.miniMessage("<!italic><gray>" + displayName));
         }
 
         return builder.build();
     }
 
-    /**
-     * Get the name of a hammer for a given tier
-     * @param type The pickaxe base-item type for this tool
-     * @return name of this tier's hammer
-     */
-    public String getHammerName(Material type) {
+    public String getToolName(final Material type, final CustomToolType toolType) {
         String tier = type.toString().split("_")[0];
 
-        return tier.charAt(0) + tier.substring(1).toLowerCase() + " Hammer";
+        return tier.charAt(0) + tier.substring(1).toLowerCase() + " " + toolType.getDisplayName();
+    }
+
+    public NamespacedKey getToolKey(final CustomToolType type) {
+        return switch (type) {
+            case HAMMER -> this.hammerKey;
+            case SPADE -> this.spadeKey;
+            default -> throw new IllegalArgumentException("Unsupported tool type: " + type);
+        };
+    }
+
+    public boolean isSupportedBaseTool(final Material material) {
+        return CustomToolType.HAMMER.matchesBaseTool(material) || CustomToolType.SPADE.matchesBaseTool(material);
     }
 }

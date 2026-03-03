@@ -15,10 +15,8 @@ import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
-import net.md_5.bungee.api.ChatColor;
-
 /**
- * Toggleable system that limits level of Efficiency that a Hammer can have
+ * Toggleable system that limits level of Efficiency that custom area tools can have
  * @author Thomas Tran
  */
 public class EfficiencyLimiter implements Listener {
@@ -47,14 +45,14 @@ public class EfficiencyLimiter implements Listener {
     private void onViewEnchants(final PrepareItemEnchantEvent event) {
         if (!this.enabled) return;
 
-        //Item must exist and be a hammer
         final ItemStack item = event.getItem();
-        if (!this.plugin.isHammer(item)) return;
+        if (!this.plugin.isCustomTool(item)) return;
         
         //For any Efficiency enchantment offering
         boolean madeAnyChanges = false;
         for (final EnchantmentOffer offer : event.getOffers()) {
-            if (offer.getEnchantment() != Enchantment.DIG_SPEED) continue;
+            assert offer != null;
+            if (offer.getEnchantment() != Enchantment.EFFICIENCY) continue;
 
             //Limit level to the max level
             if (offer.getEnchantmentLevel() > this.maxLevel) {
@@ -66,7 +64,7 @@ public class EfficiencyLimiter implements Listener {
         //Send message if setting enabled and item was changed at all
         final Player player = event.getEnchanter();
         if (madeAnyChanges && this.sendMessageToPlayers && !this.messageCooldownManager.isOnCooldown(player)) {
-            player.sendMessage(ChatColor.GRAY + "[INFO] The max Efficiency level on a Hammer has been set to " + this.maxLevel + ".");
+            player.sendRichMessage("<gray>[INFO] The max Efficiency level on custom tools has been set to <white>" + this.maxLevel + "</white>.</gray>");
             this.messageCooldownManager.setCooldown(player, Duration.ofMinutes(this.messageCooldownMinutes));
         }
     }
@@ -78,16 +76,15 @@ public class EfficiencyLimiter implements Listener {
     private void onTableEnchant(final EnchantItemEvent event) {
         if (!this.enabled) return;
 
-        //Item must exist and be a hammer
         final ItemStack item = event.getItem();
-        if (!this.plugin.isHammer(item)) return;
+        if (!this.plugin.isCustomTool(item)) return;
 
         final Map<Enchantment, Integer> enchants = event.getEnchantsToAdd();
 
-        final Integer level = enchants.getOrDefault(Enchantment.DIG_SPEED, null);
+        final Integer level = enchants.getOrDefault(Enchantment.EFFICIENCY, null);
         if (level == null || level <= this.maxLevel) return;
 
-        enchants.put(Enchantment.DIG_SPEED, this.maxLevel);
+        enchants.put(Enchantment.EFFICIENCY, this.maxLevel);
     }
 
     /**
@@ -97,21 +94,20 @@ public class EfficiencyLimiter implements Listener {
     private void onAnvilEnchant(final PrepareAnvilEvent event) {
         if (!this.enabled) return;
 
-        //Item must exist and be a hammer
         final ItemStack result = event.getResult();
-        if (!this.plugin.isHammer(result)) return;
+        if (!this.plugin.isCustomTool(result)) return;
 
         //Limit level to the max level
         assert result != null;
-        if (result.getEnchantmentLevel(Enchantment.DIG_SPEED) <= this.maxLevel) return;
-        result.removeEnchantment(Enchantment.DIG_SPEED);
-        result.addEnchantment(Enchantment.DIG_SPEED, this.maxLevel);
+        if (result.getEnchantmentLevel(Enchantment.EFFICIENCY) <= this.maxLevel) return;
+        result.removeEnchantment(Enchantment.EFFICIENCY);
+        result.addEnchantment(Enchantment.EFFICIENCY, this.maxLevel);
 
         //Send message if setting enabled
         if (this.sendMessageToPlayers) {
             for (final HumanEntity player : event.getViewers()) {
                 if (!this.messageCooldownManager.isOnCooldown(player.getUniqueId())) {
-                    player.sendMessage(ChatColor.GRAY + "[INFO] The max Efficiency level on a Hammer has been set to " + this.maxLevel + ".");
+                    player.sendRichMessage("<gray>[INFO] The max Efficiency level on custom tools has been set to <white>" + this.maxLevel + "</white>.</gray>");
                     this.messageCooldownManager.setCooldown(player.getUniqueId(), Duration.ofMinutes(this.messageCooldownMinutes));
                 }
             }
@@ -133,4 +129,3 @@ public class EfficiencyLimiter implements Listener {
     }
     
 }
-
