@@ -46,7 +46,7 @@ public class EfficiencyLimiter implements Listener {
         if (!this.enabled) return;
 
         final ItemStack item = event.getItem();
-        if (!this.plugin.isCustomTool(item)) return;
+        if (this.plugin.isCustomTool(item)) return;
         
         //For any Efficiency enchantment offering
         boolean madeAnyChanges = false;
@@ -77,7 +77,7 @@ public class EfficiencyLimiter implements Listener {
         if (!this.enabled) return;
 
         final ItemStack item = event.getItem();
-        if (!this.plugin.isCustomTool(item)) return;
+        if (this.plugin.isCustomTool(item)) return;
 
         final Map<Enchantment, Integer> enchants = event.getEnchantsToAdd();
 
@@ -95,7 +95,7 @@ public class EfficiencyLimiter implements Listener {
         if (!this.enabled) return;
 
         final ItemStack result = event.getResult();
-        if (!this.plugin.isCustomTool(result)) return;
+        if (this.plugin.isCustomTool(result)) return;
 
         //Limit level to the max level
         assert result != null;

@@ -1,8 +1,10 @@
 package io.github.poorgrammerdev.hammer;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Random;
+import java.util.stream.Stream;
 
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -30,6 +32,7 @@ public class Hammer extends JavaPlugin {
         final CraftingManager craftingManager = new CraftingManager(this);
         final HashMap<Material, NamespacedKey> hammerRecipeKeyMap = craftingManager.registerRecipes(CustomToolType.HAMMER);
         final HashMap<Material, NamespacedKey> spadeRecipeKeyMap = craftingManager.registerRecipes(CustomToolType.SPADE);
+        this.logToolItemModels();
 
         final FauxBlockDamage fauxBlockDamage = new FauxBlockDamage(this, random);
         if (fauxBlockDamage.isEnabled()) {
@@ -45,6 +48,7 @@ public class Hammer extends JavaPlugin {
         this.getServer().getPluginManager().registerEvents(new HammerMechanism(this, random, fauxBlockDamage), this);
         this.getServer().getPluginManager().registerEvents(new RepairingManager(this), this);
         this.getServer().getPluginManager().registerEvents(new RecipeManager(hammerRecipeKeyMap, spadeRecipeKeyMap), this);
+        this.getServer().getPluginManager().registerEvents(new ResourcePackListener(), this);
 
         GiveCommand giveCommand = new GiveCommand(this, hammerRecipeKeyMap, spadeRecipeKeyMap);
         Objects.requireNonNull(this.getCommand("givehammer")).setExecutor(giveCommand);
@@ -52,7 +56,7 @@ public class Hammer extends JavaPlugin {
     }
 
     public boolean isCustomTool(final ItemStack item) {
-        return this.getCustomToolType(item) != null;
+        return this.getCustomToolType(item) == null;
     }
 
     public boolean isCustomTool(final ItemStack item, final CustomToolType type) {
@@ -79,7 +83,7 @@ public class Hammer extends JavaPlugin {
         final String displayName = this.getToolName(baseTool, type);
 
         final ItemBuilder builder = new ItemBuilder(baseTool)
-            .setCustomModelData(this.getConfig().getInt("custom_model_data", 101))
+            .setItemModel(this.getItemModelKey(baseTool, type))
             .setName(Text.miniMessage("<!italic><white>" + displayName))
             .setPersistentData(this.getToolKey(type), PersistentDataType.BOOLEAN, true);
         
@@ -97,6 +101,27 @@ public class Hammer extends JavaPlugin {
         return tier.charAt(0) + tier.substring(1).toLowerCase() + " " + toolType.getDisplayName();
     }
 
+    public NamespacedKey getItemModelKey(final Material baseTool, final CustomToolType type) {
+        return new NamespacedKey(this, this.cleanString(this.getToolName(baseTool, type)).toLowerCase(Locale.ROOT));
+    }
+
+    private String cleanString(final String value) {
+        return value
+            .trim()
+            .replaceAll("\\s+", "_")
+            .replaceAll("[^a-zA-Z0-9/._-]", "");
+    }
+
+    private void logToolItemModels() {
+        for (final CustomToolType type : CustomToolType.values()) {
+            Stream.of(Material.values())
+                .filter(type::matchesBaseTool)
+                .forEach(material -> this.getLogger().info(
+                    this.getToolName(material, type) + " item model: " + this.getItemModelKey(material, type)
+                ));
+        }
+    }
+
     public NamespacedKey getToolKey(final CustomToolType type) {
         return switch (type) {
             case HAMMER -> this.hammerKey;
@@ -106,6 +131,6 @@ public class Hammer extends JavaPlugin {
     }
 
     public boolean isSupportedBaseTool(final Material material) {
-        return CustomToolType.HAMMER.matchesBaseTool(material) || CustomToolType.SPADE.matchesBaseTool(material);
+        return !CustomToolType.HAMMER.matchesBaseTool(material) && !CustomToolType.SPADE.matchesBaseTool(material);
     }
 }

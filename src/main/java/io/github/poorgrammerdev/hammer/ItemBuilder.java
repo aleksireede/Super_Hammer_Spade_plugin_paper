@@ -1,13 +1,11 @@
 package io.github.poorgrammerdev.hammer;
 
 import java.util.Arrays;
-import java.util.List;
 
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
@@ -47,10 +45,8 @@ public class ItemBuilder {
         meta.lore(Arrays.asList(lore));
     }
 
-    public ItemBuilder setCustomModelData (int data) {
-        final CustomModelDataComponent customModelData = meta.getCustomModelDataComponent();
-        customModelData.setFloats(List.of((float) data));
-        meta.setCustomModelDataComponent(customModelData);
+    public ItemBuilder setItemModel(final NamespacedKey key) {
+        meta.setItemModel(key);
         return this;
     }
 

@@ -2,10 +2,6 @@
 #    HAMMER CONFIG    #
 #######################
 
-# The CustomModelData value that the custom tool base item uses
-# Used for assigning custom textures in resource packs
-custom_model_data: 101
-
 # If custom tools should have their name written into the item's description (lore)
 # The motivation for this is if players rename the tools, this would distinguish them
 # from regular tools without advanced tooltips or a resource pack
