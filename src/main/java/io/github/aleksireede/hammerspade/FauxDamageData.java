@@ -1,4 +1,4 @@
-package io.github.poorgrammerdev.hammer;
+package io.github.aleksireede.hammerspade;
 
 import java.util.Random;
 
@@ -30,7 +30,7 @@ public class FauxDamageData {
     /**
      * Array of locations surrounding block in the plane
      */
-    public Location[] adjacentBlocks;
+    public final Location[] adjacentBlocks;
 
     /**
      * How many locations are valid in the adjacentBlocks array
@@ -49,8 +49,12 @@ public class FauxDamageData {
         this.ticks = 0;
         this.active = false;
 
-        //Empty locations array
+        // Pre-allocate location objects so they can be mutated and re-used.
+        final Location baseLocation = centerBlock.getLocation();
         this.adjacentBlocks = new Location[MAX_ADJACENT_LENGTH];
+        for (int i = 0; i < this.adjacentBlocks.length; i++) {
+            this.adjacentBlocks[i] = baseLocation.clone();
+        }
         this.adjacentCount = 0;
         
         //Generate random id values (always max length so we don't have to regenerate)
@@ -58,5 +62,16 @@ public class FauxDamageData {
         for (int i = 0; i < ids.length; i++) {
             ids[i] = random.nextInt();
         }
+    }
+
+    public void reset(final Block centerBlock) {
+        this.centerBlock = centerBlock;
+        this.ticks = 0;
+        this.adjacentCount = 0;
+        this.active = true;
+    }
+
+    public void setAdjacentBlock(final int index, final Block block) {
+        block.getLocation(this.adjacentBlocks[index]);
     }
 }

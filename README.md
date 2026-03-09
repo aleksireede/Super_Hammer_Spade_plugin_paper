@@ -42,7 +42,13 @@ Netherite hammers and spades are upgraded from their diamond versions, just like
 ## Build
 This project uses Maven, targets Paper, and requires Java 21.
 
-Build the plugin jar with:
+Install the shared library first:
+
+```bash
+mvn -f hammer-shared-lib/pom.xml install
+```
+
+Then build the plugin jar:
 
 ```bash
 mvn package

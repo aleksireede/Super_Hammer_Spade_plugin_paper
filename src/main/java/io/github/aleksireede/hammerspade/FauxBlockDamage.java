@@ -1,4 +1,4 @@
-package io.github.poorgrammerdev.hammer;
+package io.github.aleksireede.hammerspade;
 
 import java.util.HashMap;
 import java.util.Random;
@@ -43,29 +43,20 @@ public class FauxBlockDamage extends BukkitRunnable implements Listener {
         //System must be enabled
         if (!this.enabled) return null;
 
-        //TODO: This is most likely bad code architecture, find a way to clean this up without constant memory allocation
-        FauxDamageData data = this.playerData.getOrDefault(player, null);
+        FauxDamageData data = this.playerData.get(player);
 
         //First time this player's been registered -- allocate new data objects
         if (data == null) {
             data = new FauxDamageData(centerBlock, random);
-            data.active = true;
-
             this.playerData.put(player, data);
-            return data;
         }
-        
-        //Returning player -----
 
-        //Check if they are active; if so, deactivate first
+        // Returning player -----
         if (data.active) {
             deactivate(player);
         }
 
-        //Update data values and re-activate
-        data.centerBlock = centerBlock;
-        data.ticks = 0;
-        data.active = true;
+        data.reset(centerBlock);
         return data;
     }
     
@@ -90,7 +81,7 @@ public class FauxBlockDamage extends BukkitRunnable implements Listener {
         if (!this.enabled) return;
 
         //Ensure player exists and is active
-        final FauxDamageData data = this.playerData.getOrDefault(player, null);
+        final FauxDamageData data = this.playerData.get(player);
         if (data == null || !data.active) return;
 
         //Ensure block is valid
@@ -112,8 +103,7 @@ public class FauxBlockDamage extends BukkitRunnable implements Listener {
      */
     @Override
     public void run() {
-        this.playerData.keySet().forEach((final Player player) -> {
-            final FauxDamageData data = this.playerData.getOrDefault(player, null);
+        this.playerData.forEach((player, data) -> {
             if (!data.active) return;
 
             //Calculate the estimated progress % and display to player

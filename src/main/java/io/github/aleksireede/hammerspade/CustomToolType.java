@@ -1,4 +1,4 @@
-package io.github.poorgrammerdev.hammer;
+package io.github.aleksireede.hammerspade;
 
 import org.bukkit.Material;
 import org.bukkit.Tag;

@@ -1,8 +1,9 @@
-package io.github.poorgrammerdev.hammer;
+package io.github.aleksireede.hammerspade;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
+import io.github.aleksireede.hammerspade.common.Text;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
@@ -94,7 +95,7 @@ public class RepairingManager implements Listener {
         //If player is anviling a single item (maybe renaming) -> ignore
         if (items[0] == null || items[1] == null) return;
 
-        if (this.plugin.isSupportedBaseTool(items[0].getType()) || this.plugin.isSupportedBaseTool(items[1].getType())) return;
+        if (this.plugin.isUnsupportedBaseTool(items[0].getType()) || this.plugin.isUnsupportedBaseTool(items[1].getType())) return;
 
         final CustomToolType toolType1 = this.plugin.getCustomToolType(items[0]);
         final CustomToolType toolType2 = this.plugin.getCustomToolType(items[1]);

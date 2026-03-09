@@ -1,4 +1,4 @@
-package io.github.poorgrammerdev.hammer;
+package io.github.aleksireede.hammerspade;
 
 import java.util.HashMap;
 

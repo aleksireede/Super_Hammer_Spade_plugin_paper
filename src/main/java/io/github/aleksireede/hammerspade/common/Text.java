@@ -1,4 +1,4 @@
-package io.github.poorgrammerdev.hammer;
+package io.github.aleksireede.hammerspade.common;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;

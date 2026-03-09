@@ -1,6 +1,7 @@
-package io.github.poorgrammerdev.hammer;
+package io.github.aleksireede.hammerspade;
 
 import java.util.Random;
+import java.util.Set;
 
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -13,11 +14,15 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockDamageAbortEvent;
 import org.bukkit.event.block.BlockDamageEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
@@ -35,6 +40,14 @@ public class HammerMechanism implements Listener {
     private static final int NORTH_SOUTH = 0;
     private static final int EAST_WEST = 1;
     private static final int UP_DOWN = 2;
+    private static final Set<Material> PATHABLE_BLOCKS = Set.of(
+            Material.GRASS_BLOCK,
+            Material.DIRT,
+            Material.PODZOL,
+            Material.COARSE_DIRT,
+            Material.MYCELIUM,
+            Material.ROOTED_DIRT
+    );
 
     private final Hammer plugin;
     private final Random random;
@@ -203,23 +216,15 @@ public class HammerMechanism implements Listener {
         final FauxDamageData data = this.fauxBlockDamage.register(player, targetBlock);
         if (data == null) return; //System is disabled (or something else went wrong)
 
-        //TODO: This is most likely bad code architecture, find a way to clean this up without constant memory allocation
         int i = 0;
         for (final Vector offset : this.planeOffsets[planeIndex]) {
             targetBlock.getLocation(location);
             location.add(offset);
 
             //Calculate block location if hammerable
-            if (isBlockAreaMineable(location.getBlock(), tool, hardness, toolType)) {
-                if (data.adjacentBlocks[i] == null) {
-                    data.adjacentBlocks[i] = location.clone();
-                }
-                else {
-                    data.adjacentBlocks[i].setWorld(location.getWorld());
-                    data.adjacentBlocks[i].setX(location.getX());
-                    data.adjacentBlocks[i].setY(location.getY());
-                    data.adjacentBlocks[i].setZ(location.getZ());
-                }
+            final Block adjacentBlock = location.getBlock();
+            if (isBlockAreaMineable(adjacentBlock, tool, hardness, toolType)) {
+                data.setAdjacentBlock(i, adjacentBlock);
                 i++;
             }
         }
@@ -236,6 +241,75 @@ public class HammerMechanism implements Listener {
         // (1) they can swap off of it
         // (2) if they weren't using it they wouldn't have been registered in the first place so this would do nothing
         this.fauxBlockDamage.deactivate(event.getPlayer(), event.getBlock());
+    }
+
+    /**
+     * Creates a 3x3 dirt path area when using a custom spade on valid blocks.
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void useSpadePathing(final PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND) return;
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+
+        final Block clickedBlock = event.getClickedBlock();
+        if (clickedBlock == null) return;
+
+        final Player player = event.getPlayer();
+        if (player.isSneaking()) return;
+
+        final ItemStack tool = event.getItem();
+        if (this.plugin.getCustomToolType(tool) != CustomToolType.SPADE) return;
+        if (event.getBlockFace() != BlockFace.UP) return;
+        if (canFlattenToPath(clickedBlock)) return;
+
+        assert tool != null;
+        final ItemMeta meta = tool.getItemMeta();
+        if (!(meta instanceof Damageable damageableMeta)) return;
+
+        event.setUseInteractedBlock(Event.Result.DENY);
+        event.setUseItemInHand(Event.Result.DENY);
+        event.setCancelled(true);
+
+        final boolean creativeMode = player.getGameMode() == GameMode.CREATIVE;
+        final int unbreaking = damageableMeta.getEnchantLevel(Enchantment.UNBREAKING);
+        final int maxDamage = tool.getType().getMaxDurability() - 1;
+        int damage = damageableMeta.getDamage();
+        int flattenedCount = 0;
+
+        final Location center = clickedBlock.getLocation();
+        final World world = clickedBlock.getWorld();
+
+        outer:
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                if (damage >= maxDamage) break outer;
+
+                final Block target = world.getBlockAt(center.getBlockX() + x, center.getBlockY(), center.getBlockZ() + z);
+                if (canFlattenToPath(target)) continue;
+
+                target.setType(Material.DIRT_PATH, true);
+                flattenedCount++;
+
+                if ((!meta.isUnbreakable() && !creativeMode) && (unbreaking == 0 || ((random.nextInt(100) + 1) <= (100 / (unbreaking + 1))))) {
+                    damage++;
+                }
+            }
+        }
+
+        if (flattenedCount == 0) return;
+
+        world.playSound(center, Sound.ITEM_SHOVEL_FLATTEN, SoundCategory.BLOCKS, 1.0f, 1.0f);
+
+        if (creativeMode) return;
+
+        if (damage >= maxDamage) {
+            world.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, SoundCategory.PLAYERS, 1.0f, 1.0f);
+            world.spawnParticle(Particle.ITEM, player.getEyeLocation().subtract(0, 0.25, 0).add(player.getEyeLocation().getDirection().normalize().multiply(0.5f)), 15, 0.05, 0.01, 0.05, 0.1, tool);
+            tool.setAmount(tool.getAmount() - 1);
+        } else {
+            damageableMeta.setDamage(damage);
+            tool.setItemMeta(damageableMeta);
+        }
     }
 
     /**
@@ -291,6 +365,13 @@ public class HammerMechanism implements Listener {
             toolType.canMine(block, tool) &&
             block.getType().getHardness() != Material.BEDROCK.getHardness() // Safety check - cannot be equal to bedrock's hardness
         );
+    }
+
+    private boolean canFlattenToPath(final Block block) {
+        if (!PATHABLE_BLOCKS.contains(block.getType())) return true;
+
+        final Block above = block.getRelative(BlockFace.UP);
+        return !above.getType().isAir();
     }
 
 }

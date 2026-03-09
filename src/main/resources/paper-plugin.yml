@@ -1,0 +1,17 @@
+name: HammerSpade
+author: AleksiReede
+description: Adds craftable hammer and spade tools that dig in a 3x3 radius
+version: '${project.version}'
+main: io.github.aleksireede.hammerspade.Hammer
+api-version: '1.21.11'
+dependencies:
+  server:
+    HammerSharedLib:
+      load: BEFORE
+      required: true
+      join-classpath: true
+commands:
+  givehammer:
+    usage: /givetool <username> <type> [count] [damage]
+    description: Give players hammers or spades.
+    permission: hammerspade.givetool

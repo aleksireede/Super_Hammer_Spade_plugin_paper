@@ -68,5 +68,11 @@
             <version>${paper.api.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>io.github.aleksireede</groupId>
+            <artifactId>hammer-shared-lib</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 </project>
