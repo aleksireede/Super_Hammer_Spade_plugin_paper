@@ -14,11 +14,12 @@ shared-item-text:
 # Shared resource pack delivery for this plugin (and reusable in other plugins).
 shared-resource-pack:
   enabled: true
-  url: "https://www.dropbox.com/scl/fi/9ka8ucljpt6zb9e9edvoc/hammerspade_resourcepack.zip?rlkey=fabt6gpexkmf7gatf9ykheneu&st=ruk127fl&dl=1"
-  sha1: "f97c871121025c4a6368fa39b288a0c21887c6e1"
-  required: false
   send-on-join: true
-  prompt: "<gray>This server uses a custom resource pack for tool models.</gray>"
+  packs:
+    - url: "https://www.dropbox.com/scl/fi/9ka8ucljpt6zb9e9edvoc/hammerspade_resourcepack.zip?rlkey=fabt6gpexkmf7gatf9ykheneu&st=ruk127fl&dl=1"
+      sha1: "f97c871121025c4a6368fa39b288a0c21887c6e1"
+      required: true
+      prompt: "<gray>This server uses a custom resource pack for tool models.</gray>"
 
 # If custom tools should have their name written into the item's description (lore)
 # The motivation for this is if players rename the tools, this would distinguish them

@@ -9,7 +9,7 @@ public enum CustomToolType {
     HAMMER("hammer", "Hammer") {
         @Override
         public boolean matchesBaseTool(final Material material) {
-            return Tag.ITEMS_PICKAXES.isTagged(material);
+            return !material.isLegacy() && Tag.ITEMS_PICKAXES.isTagged(material);
         }
 
         @Override
@@ -32,7 +32,7 @@ public enum CustomToolType {
     SPADE("spade", "Spade") {
         @Override
         public boolean matchesBaseTool(final Material material) {
-            return Tag.ITEMS_SHOVELS.isTagged(material);
+            return !material.isLegacy() && Tag.ITEMS_SHOVELS.isTagged(material);
         }
 
         @Override

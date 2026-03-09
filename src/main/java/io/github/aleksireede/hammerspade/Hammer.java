@@ -1,5 +1,7 @@
 package io.github.aleksireede.hammerspade;
 
+import io.github.aleksireede.hammershared.SharedItemUpdater;
+import io.github.aleksireede.hammershared.SharedText;
 import io.github.aleksireede.hammerspade.common.ResourcePackListener;
 import io.github.aleksireede.hammerspade.common.config;
 import io.github.aleksireede.hammershared.SharedItemTextStyle;
@@ -47,6 +49,11 @@ public class Hammer extends JavaPlugin {
         this.getConfig().options().copyDefaults(true);
         this.saveConfig();
         this.itemTextStyle = SharedItemTextStyle.fromConfig(this.getConfig());
+
+        // Register item-specific description lore for hammer (10) and spade (11)
+        SharedItemUpdater.registerLore(10, ItemLore::hammer_lore);
+        SharedItemUpdater.registerLore(11, ItemLore::spade_lore);
+
         final SharedResourcePackManager resourcePackManager = SharedResourcePackManager.fromConfig(this, this.getConfig());
         resourcePackManager.logState();
 
@@ -75,8 +82,7 @@ public class Hammer extends JavaPlugin {
         }
 
         GiveCommand giveCommand = new GiveCommand(this, hammerRecipeKeyMap, spadeRecipeKeyMap);
-        Objects.requireNonNull(this.getCommand("givehammer")).setExecutor(giveCommand);
-        Objects.requireNonNull(this.getCommand("givehammer")).setTabCompleter(giveCommand);
+        this.registerCommand("givehammer", "Give players hammers or spades.", List.of(), giveCommand);
     }
 
     @Override
@@ -112,24 +118,34 @@ public class Hammer extends JavaPlugin {
     public ItemStack createCustomTool(final Material baseTool, final CustomToolType type) {
         if (!type.matchesBaseTool(baseTool)) return null;
         final String displayName = this.getToolName(baseTool, type);
+        final String rarity = this.getRarityForMaterial(baseTool);
+        final String itemType = type.getDisplayName();
 
         final ItemBuilder builder = new ItemBuilder(baseTool)
                 .setItemModel(this.getItemModelKey(baseTool, type))
-                .setName(this.itemTextStyle.formatName(displayName))
+                .setName(SharedText.miniMessage(SharedItemUpdater.getColorFromRarity(rarity) + "<!italic>" + displayName))
                 .setPersistentData(this.getToolKey(type), PersistentDataType.BOOLEAN, true)
-                .setPersistentData(
-                        config.customIdKey(),
-                        PersistentDataType.INTEGER,
-                        type == CustomToolType.HAMMER ? 10 : 11
-                );
+                .setPersistentData(config.customIdKey(), PersistentDataType.INTEGER,
+                        type == CustomToolType.HAMMER ? 10 : 11)
+                .setPersistentData(config.rarityKey(), PersistentDataType.STRING, rarity.toLowerCase())
+                .setPersistentData(config.itemTypeKey(), PersistentDataType.STRING, itemType);
 
-        if (this.getConfig().getBoolean("write_description", true)) {
-            // The lore still identifies the tool after players rename it.
-            final List<Component> lore = this.itemTextStyle.formatLore(displayName);
-            builder.setLore(lore.toArray(Component[]::new));
-        }
+        final ItemStack item = builder.build();
+        SharedItemUpdater.updateChecker(item);
+        return item;
+    }
 
-        return builder.build();
+    /** Maps tool material tier to a rarity level for display purposes. */
+    private String getRarityForMaterial(final Material material) {
+        final String tier = material.toString().split("_")[0].toLowerCase();
+        return switch (tier) {
+            case "stone"     -> "Uncommon";
+            case "iron"      -> "Rare";
+            case "golden"    -> "Uncommon";
+            case "diamond"   -> "Epic";
+            case "netherite" -> "Legendary";
+            default          -> "Common";
+        };
     }
 
     public String getToolName(final Material type, final CustomToolType toolType) {

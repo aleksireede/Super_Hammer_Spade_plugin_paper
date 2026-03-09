@@ -1,16 +1,16 @@
 package io.github.aleksireede.hammerspade;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
+import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
-import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -23,7 +23,7 @@ import org.jspecify.annotations.NonNull;
  * Command to allow admins to give hammers to players
  * @author Thomas Tran
  */
-public class GiveCommand implements CommandExecutor, TabCompleter {
+public class GiveCommand implements BasicCommand {
     private final Hammer plugin;
     private final HashMap<String, ToolDefinition> toolMap;
     
@@ -42,23 +42,23 @@ public class GiveCommand implements CommandExecutor, TabCompleter {
     }
 
     @Override
-    public boolean onCommand(@NonNull CommandSender sender, Command command, @NonNull String label, String @NonNull [] args) {
+    public void execute(@NonNull CommandSourceStack stack, @NonNull String[] args) {
         // /givehammer <selector> <hammer-type> [count] [damage]
-        if (!command.getName().equalsIgnoreCase("givehammer")) return false;
+        final CommandSender sender = stack.getSender();
         if (!sender.hasPermission("hammer.givehammer")) {
             sender.sendRichMessage("<red>You do not have permission to use this command.");
-            return true;
+            return;
         }
         if (args.length < 2) {
             sender.sendRichMessage("<red>Too few arguments.");
-            return false;
+            return;
         }
 
         // Make sure the hammer type is valid
         final String hammerType = args[1].toUpperCase();
         if (!this.toolMap.containsKey(hammerType)) {
             sender.sendRichMessage("<red>Invalid tool type.");
-            return false;
+            return;
         }
         final ToolDefinition toolDefinition = this.toolMap.get(hammerType);
 
@@ -69,7 +69,7 @@ public class GiveCommand implements CommandExecutor, TabCompleter {
         }
         catch (IllegalArgumentException e) {
             sender.sendRichMessage("<red>Invalid selector.");
-            return false;
+            return;
         }
 
         final ArrayList<Player> players = new ArrayList<>();
@@ -82,14 +82,14 @@ public class GiveCommand implements CommandExecutor, TabCompleter {
         //Make sure there is at least one player
         if (players.isEmpty()) {
             sender.sendRichMessage("<red>Selector returned no players.");
-            return false;
+            return;
         }
 
         //Get the hammer item
         final ItemStack tool = plugin.createCustomTool(toolDefinition.material, toolDefinition.type);
         if (tool == null) {
             sender.sendRichMessage("<red>Internal plugin error: failed to create tool.");
-            return true;
+            return;
         }
 
         //Adjust count if necessary
@@ -102,13 +102,13 @@ public class GiveCommand implements CommandExecutor, TabCompleter {
             }
             catch (NumberFormatException e) {
                 sender.sendRichMessage("<red>Invalid quantity, expected a number.");
-                return false;
+                return;
             }
 
             //Invalid quantity
             if (count <= 0 || count > 64) {
                 sender.sendRichMessage("<red>Invalid quantity, expected a number between 1 and 64.");
-                return false;
+                return;
             }
 
             tool.setAmount(count);
@@ -118,7 +118,7 @@ public class GiveCommand implements CommandExecutor, TabCompleter {
         if (args.length >= 4) {
             if (!(tool.getItemMeta() instanceof Damageable meta)) {
                 sender.sendRichMessage("<red>Internal plugin error.");
-                return false;
+                return;
             }
 
             final int damage;
@@ -129,7 +129,7 @@ public class GiveCommand implements CommandExecutor, TabCompleter {
             }
             catch (NumberFormatException e) {
                 sender.sendRichMessage("<red>Invalid damage, expected a number.");
-                return false;
+                return;
             }
 
             meta.setDamage(damage);
@@ -147,19 +147,16 @@ public class GiveCommand implements CommandExecutor, TabCompleter {
                 Placeholder.unparsed("player", player.getName())
             );
         }
-
-        return true;
     }
 
     @Override
-    public List<String> onTabComplete(@NonNull CommandSender sender, Command command, @NonNull String label, String @NonNull [] args) {
+    public @NonNull Collection<String> suggest(@NonNull CommandSourceStack stack, @NonNull String[] args) {
         // /givehammer <selector> <hammer-type> [count] [damage]
-        if (!command.getName().equalsIgnoreCase("givehammer")) return null;
-        if (!sender.hasPermission("hammer.givehammer")) return null;
+        final CommandSender sender = stack.getSender();
+        if (!sender.hasPermission("hammer.givehammer")) return List.of();
 
         final ArrayList<String> ret = new ArrayList<>();
 
-        //Best code I've ever written :)
         switch (args.length) {
             case 1:
                 //Adds all online players that still might be typed
@@ -176,6 +173,16 @@ public class GiveCommand implements CommandExecutor, TabCompleter {
         }
 
         return ret;
+    }
+
+    @Override
+    public boolean canUse(CommandSender sender) {
+        return sender.hasPermission("hammer.givehammer");
+    }
+
+    @Override
+    public String permission() {
+        return "hammer.givehammer";
     }
 
     private void addTools(final HashMap<Material, NamespacedKey> recipeKeyMap, final CustomToolType type) {

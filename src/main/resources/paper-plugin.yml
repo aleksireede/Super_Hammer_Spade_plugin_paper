@@ -10,8 +10,3 @@ dependencies:
       load: BEFORE
       required: true
       join-classpath: true
-commands:
-  givehammer:
-    usage: /givetool <username> <type> [count] [damage]
-    description: Give players hammers or spades.
-    permission: hammerspade.givetool
