@@ -42,7 +42,7 @@ public class GiveCommand implements BasicCommand {
     }
 
     @Override
-    public void execute(@NonNull CommandSourceStack stack, @NonNull String[] args) {
+    public void execute(@NonNull CommandSourceStack stack, @NonNull String @NonNull [] args) {
         // /givehammer <selector> <hammer-type> [count] [damage]
         final CommandSender sender = stack.getSender();
         if (!sender.hasPermission("hammer.givehammer")) {
@@ -150,7 +150,7 @@ public class GiveCommand implements BasicCommand {
     }
 
     @Override
-    public @NonNull Collection<String> suggest(@NonNull CommandSourceStack stack, @NonNull String[] args) {
+    public @NonNull Collection<String> suggest(@NonNull CommandSourceStack stack, @NonNull String @NonNull [] args) {
         // /givehammer <selector> <hammer-type> [count] [damage]
         final CommandSender sender = stack.getSender();
         if (!sender.hasPermission("hammer.givehammer")) return List.of();

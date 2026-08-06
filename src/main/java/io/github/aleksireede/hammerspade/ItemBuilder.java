@@ -1,7 +1,5 @@
 package io.github.aleksireede.hammerspade;
 
-import java.util.Arrays;
-
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
@@ -39,10 +37,6 @@ public class ItemBuilder {
     public ItemBuilder setName(final Component name) {
         meta.displayName(name);
         return this;
-    }
-
-    public void setLore(final Component... lore) {
-        meta.lore(Arrays.asList(lore));
     }
 
     public ItemBuilder setItemModel(final NamespacedKey key) {
