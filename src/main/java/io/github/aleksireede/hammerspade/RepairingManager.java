@@ -116,10 +116,16 @@ public class RepairingManager implements Listener {
         final CustomToolType toolType = this.plugin.getCustomToolType(baseTool);
         if (toolType == null || !toolType.matchesBaseTool(vanillaResult.getType())) return;
 
-        final ItemStack upgradedTool = baseTool.clone().withType(vanillaResult.getType());
-        this.copyDamage(baseTool, upgradedTool);
-        this.refreshToolAppearance(upgradedTool, toolType, baseTool);
-        event.setResult(upgradedTool);
+        // Convert vanilla result to a proper custom tool so it has the correct model and lore
+        final ItemStack customUpgraded = this.plugin.createCustomTool(vanillaResult.getType(), toolType);
+        if (customUpgraded == null) return;
+
+        // Preserve damage from the base tool
+        this.copyDamage(baseTool, customUpgraded);
+
+        // If the player renamed the base tool, preserve that name where appropriate
+        this.refreshToolAppearance(customUpgraded, toolType, baseTool);
+        event.setResult(customUpgraded);
     }
 
     /**
@@ -159,7 +165,12 @@ public class RepairingManager implements Listener {
         }
 
         if (this.plugin.getConfig().getBoolean("write_description", true)) {
-            resultMeta.lore(Collections.singletonList(Text.miniMessage("<!italic><gray>" + expectedName)));
+            // Set descriptive ability lore based on tool type (hammer or spade)
+            if (toolType == CustomToolType.HAMMER) {
+                resultMeta.lore(ItemLore.hammer_lore());
+            } else if (toolType == CustomToolType.SPADE) {
+                resultMeta.lore(ItemLore.spade_lore());
+            }
         }
 
         result.setItemMeta(resultMeta);
