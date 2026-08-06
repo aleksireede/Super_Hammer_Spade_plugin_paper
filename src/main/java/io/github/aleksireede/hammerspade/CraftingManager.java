@@ -30,8 +30,13 @@ public class CraftingManager implements Listener {
 
         for (final RecipeChoice choice : craftMap.keySet()) {
             final Material resultType = craftMap.get(choice);
-
             final String tier = resultType.name().split("_")[0];
+
+            // Skip netherite - it will be handled by UpgradeManager
+            if (tier.equalsIgnoreCase("netherite")) {
+                continue;
+            }
+
             final NamespacedKey key = new NamespacedKey(plugin, tier.toLowerCase() + "_" + toolType.getKeySuffix());
 
             final ItemStack customTool = plugin.createCustomTool(resultType, toolType);

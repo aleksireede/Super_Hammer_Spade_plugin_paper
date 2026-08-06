@@ -55,6 +55,15 @@ public class Hammer extends JavaPlugin {
         final HashMap<Material, NamespacedKey> spadeRecipeKeyMap = craftingManager.registerRecipes(CustomToolType.SPADE);
         this.logToolItemModels();
 
+        // Register netherite upgrade recipes
+        final UpgradeManager upgradeManager = new UpgradeManager(this);
+        final HashMap<Material, NamespacedKey> hammerUpgradeKeyMap = upgradeManager.registerUpgradeRecipes(CustomToolType.HAMMER, hammerRecipeKeyMap);
+        final HashMap<Material, NamespacedKey> spadeUpgradeKeyMap = upgradeManager.registerUpgradeRecipes(CustomToolType.SPADE, spadeRecipeKeyMap);
+
+        // Combine craft and upgrade maps for RecipeManager
+        hammerRecipeKeyMap.putAll(hammerUpgradeKeyMap);
+        spadeRecipeKeyMap.putAll(spadeUpgradeKeyMap);
+
         final FauxBlockDamage fauxBlockDamage = new FauxBlockDamage(this, random);
         if (fauxBlockDamage.isEnabled()) {
             fauxBlockDamage.runTaskTimer(this, 0, 0);
@@ -65,6 +74,10 @@ public class Hammer extends JavaPlugin {
         if (efficiencyLimiter.isEnabled()) {
             this.getServer().getPluginManager().registerEvents(efficiencyLimiter, this);
         }
+
+        // Register block outline highlighter to show 3x3 outline using end rod particles
+        final BlockOutlineHighlighter outlineHighlighter = new BlockOutlineHighlighter(this);
+        outlineHighlighter.runTaskTimer(this, 0, 2); // Update every 2 ticks for smooth outline
 
         this.getServer().getPluginManager().registerEvents(new HammerMechanism(this, random, fauxBlockDamage), this);
         this.getServer().getPluginManager().registerEvents(new RepairingManager(this), this);

@@ -112,3 +112,8 @@ buildNumber.properties
 
 # Common working directory
 run/
+
+# Stakpak session files
+.stakpak/session*
+vtcode.toml
+.vtcode
