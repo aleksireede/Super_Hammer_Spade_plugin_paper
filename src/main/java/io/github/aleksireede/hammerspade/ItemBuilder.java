@@ -11,7 +11,6 @@ import net.kyori.adventure.text.Component;
 
 /**
  * Utility class for easily creating custom items.
- * @author Thomas Tran
  */
 public class ItemBuilder {
     private final ItemStack item;

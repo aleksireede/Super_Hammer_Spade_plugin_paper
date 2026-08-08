@@ -117,3 +117,4 @@ run/
 .stakpak/session*
 vtcode.toml
 .vtcode
+.poolside

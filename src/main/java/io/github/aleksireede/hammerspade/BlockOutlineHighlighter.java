@@ -1,7 +1,6 @@
 package io.github.aleksireede.hammerspade;
 
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -52,11 +51,11 @@ public class BlockOutlineHighlighter extends BukkitRunnable {
             Location baseLocation = targetBlock.getLocation().clone();
 
             // Draw outline
-            drawOutline(player, baseLocation, outerBlocks);
+            drawOutline(baseLocation, outerBlocks);
         }
     }
 
-    private void drawOutline(Player player, Location baseLocation, Vector[] outerBlocks) {
+    private void drawOutline(Location baseLocation, Vector[] outerBlocks) {
         // Draw outline for ALL blocks in the selection, regardless of whether they can be mined
         for (Vector offset : outerBlocks) {
             Location blockLocation = baseLocation.clone().add(offset);

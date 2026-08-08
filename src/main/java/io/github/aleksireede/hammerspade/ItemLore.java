@@ -11,19 +11,15 @@ public final class ItemLore {
 
     private ItemLore() {}
 
-    public static List<Component> hammer_lore() {
+    public static List<Component> tool_lore(String action) {
         List<Component> lore = new ArrayList<>();
-        lore.add(SharedText.miniMessage("<!i><gold>Ability: Area Mine"));
-        lore.add(SharedText.miniMessage("<!i><white>Mines a 3×3 area of blocks simultaneously."));
-        lore.add(SharedText.miniMessage("<!i><white>Hold Shift to mine a single block."));
-        return lore;
-    }
-
-    public static List<Component> spade_lore() {
-        List<Component> lore = new ArrayList<>();
-        lore.add(SharedText.miniMessage("<!i><gold>Ability: Area Dig"));
-        lore.add(SharedText.miniMessage("<!i><white>Digs a 3×3 area of blocks simultaneously."));
-        lore.add(SharedText.miniMessage("<!i><white>Hold Shift to dig a single block."));
+        lore.add(SharedText.miniMessage("<!i><gold>Ability: Area " + action));
+        lore.add(SharedText.miniMessage(
+                "<!i><white>" + action + "s a 3×3 area of blocks simultaneously."
+        ));
+        lore.add(SharedText.miniMessage(
+                "<!i><white>Hold Shift to " + action.toLowerCase() + " a single block."
+        ));
         return lore;
     }
 }

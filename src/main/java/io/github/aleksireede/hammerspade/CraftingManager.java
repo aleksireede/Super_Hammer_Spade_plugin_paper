@@ -61,7 +61,7 @@ public class CraftingManager implements Listener {
             final Recipe recipe = iterator.next();
 
             if (!(recipe instanceof ShapedRecipe shaped)) continue;
-            if (!toolType.matchesBaseTool(recipe.getResult().getType())) continue;
+            if (toolType.matchesBaseTool(recipe.getResult().getType())) continue;
 
             if (!shaped.getKey().getNamespace().equals(NamespacedKey.MINECRAFT)) continue;
 

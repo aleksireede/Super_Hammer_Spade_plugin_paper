@@ -1,9 +1,0 @@
-name: BlockPreviewPlugin
-version: 1.0
-main: com.example.plugin.BlockPreviewPlugin
-api-version: 1.21
-commands:
-  preview:
-    description: Show a preview of blocks that will be broken with the specified tool
-    usage: /preview <tool> [distance] [blockType]
-    permission: blockpreview.use

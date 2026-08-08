@@ -3,8 +3,8 @@ package io.github.aleksireede.hammerspade;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.SmithingRecipe;
 import org.bukkit.inventory.RecipeChoice;
+import org.bukkit.inventory.SmithingTransformRecipe;
 
 import java.util.HashMap;
 
@@ -20,8 +20,7 @@ public class UpgradeManager {
     }
 
     public HashMap<Material, NamespacedKey> registerUpgradeRecipes(
-            final CustomToolType toolType,
-            final HashMap<Material, NamespacedKey> craftedRecipes) {
+            final CustomToolType toolType) {
         final HashMap<Material, NamespacedKey> ret = new HashMap<>();
 
         // Get the diamond version of the tool
@@ -41,17 +40,22 @@ public class UpgradeManager {
         final NamespacedKey key = new NamespacedKey(plugin, tier.toLowerCase() + "_" + toolType.getKeySuffix());
 
         // Create netherite version of the tool
-        final ItemStack netheritCustomTool = plugin.createCustomTool(netheriteTool, toolType);
+        final ItemStack netheriteCustomTool = plugin.createCustomTool(netheriteTool, toolType);
 
         // Use the diamond version as the base for upgrading
         final ItemStack diamondCustomTool = plugin.createCustomTool(diamondTool, toolType);
 
         // Create smithing recipe: diamond tool + netherite ingot -> netherite tool
-        SmithingRecipe recipe = new SmithingRecipe(
+        SmithingTransformRecipe recipe = new SmithingTransformRecipe(
                 key,
-                netheritCustomTool,
+                netheriteCustomTool,
+                new RecipeChoice.MaterialChoice(
+                        Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE
+                ),
                 new RecipeChoice.ExactChoice(diamondCustomTool),
-                new RecipeChoice.MaterialChoice(Material.NETHERITE_INGOT)
+                new RecipeChoice.MaterialChoice(
+                        Material.NETHERITE_INGOT
+                )
         );
 
         plugin.getServer().addRecipe(recipe);

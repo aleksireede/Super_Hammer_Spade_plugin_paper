@@ -1,7 +1,6 @@
 package io.github.aleksireede.hammerspade;
 
 import java.util.ArrayList;
-import java.util.Collections;
 
 import io.github.aleksireede.hammerspade.common.Text;
 import org.bukkit.event.EventHandler;
@@ -114,7 +113,7 @@ public class RepairingManager implements Listener {
         if (baseTool == null || vanillaResult == null) return;
 
         final CustomToolType toolType = this.plugin.getCustomToolType(baseTool);
-        if (toolType == null || !toolType.matchesBaseTool(vanillaResult.getType())) return;
+        if (toolType == null || toolType.matchesBaseTool(vanillaResult.getType())) return;
 
         // Convert vanilla result to a proper custom tool so it has the correct model and lore
         final ItemStack customUpgraded = this.plugin.createCustomTool(vanillaResult.getType(), toolType);
@@ -167,9 +166,9 @@ public class RepairingManager implements Listener {
         if (this.plugin.getConfig().getBoolean("write_description", true)) {
             // Set descriptive ability lore based on tool type (hammer or spade)
             if (toolType == CustomToolType.HAMMER) {
-                resultMeta.lore(ItemLore.hammer_lore());
+                resultMeta.lore(ItemLore.tool_lore("Mine"));
             } else if (toolType == CustomToolType.SPADE) {
-                resultMeta.lore(ItemLore.spade_lore());
+                resultMeta.lore(ItemLore.tool_lore("Dig"));
             }
         }
 
