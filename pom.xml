@@ -19,7 +19,9 @@
     </properties>
 
     <build>
-        <finalName>${project.artifactId}</finalName>
+        <!-- Make a no-goal Maven invocation produce the deployable shaded jar. -->
+        <defaultGoal>package</defaultGoal>
+        <finalName>Super_Hammer_Spade_plugin_paper</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

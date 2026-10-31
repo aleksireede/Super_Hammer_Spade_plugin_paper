@@ -2,6 +2,7 @@ package io.github.aleksireede.hammerspade;
 
 import java.util.ArrayList;
 
+import io.github.aleksireede.hammershared.SharedItemUpdater;
 import io.github.aleksireede.hammerspade.common.Text;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -121,9 +122,11 @@ public class RepairingManager implements Listener {
 
         // Preserve damage from the base tool
         this.copyDamage(baseTool, customUpgraded);
+        this.copyEnchantments(baseTool, customUpgraded);
 
         // If the player renamed the base tool, preserve that name where appropriate
         this.refreshToolAppearance(customUpgraded, toolType, baseTool);
+        SharedItemUpdater.updateChecker(customUpgraded);
         event.setResult(customUpgraded);
     }
 
@@ -179,6 +182,17 @@ public class RepairingManager implements Listener {
         if (!(from.getItemMeta() instanceof Damageable fromMeta) || !(to.getItemMeta() instanceof Damageable toMeta)) return;
 
         toMeta.setDamage(fromMeta.getDamage());
+        to.setItemMeta(toMeta);
+    }
+
+    private void copyEnchantments(final ItemStack from, final ItemStack to) {
+        final ItemMeta fromMeta = from.getItemMeta();
+        final ItemMeta toMeta = to.getItemMeta();
+        if (fromMeta == null || toMeta == null) return;
+
+        fromMeta.getEnchants().forEach((enchantment, level) ->
+                toMeta.addEnchant(enchantment, level, true)
+        );
         to.setItemMeta(toMeta);
     }
 

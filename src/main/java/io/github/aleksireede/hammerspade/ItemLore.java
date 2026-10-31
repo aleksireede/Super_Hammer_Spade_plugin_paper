@@ -22,4 +22,5 @@ public final class ItemLore {
         ));
         return lore;
     }
+
 }
