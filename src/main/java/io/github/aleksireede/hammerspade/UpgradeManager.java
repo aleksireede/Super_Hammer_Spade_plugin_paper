@@ -52,7 +52,7 @@ public class UpgradeManager {
                 new RecipeChoice.MaterialChoice(
                         Material.NETHERITE_UPGRADE_SMITHING_TEMPLATE
                 ),
-                new RecipeChoice.ExactChoice(diamondCustomTool),
+                RecipeChoice.exactChoice(diamondCustomTool),
                 new RecipeChoice.MaterialChoice(
                         Material.NETHERITE_INGOT
                 )
