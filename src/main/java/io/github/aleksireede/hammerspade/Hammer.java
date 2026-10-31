@@ -156,11 +156,13 @@ public class Hammer extends JavaPlugin {
                 this
         );
 
-        if (resourcePackManager.isEnabled()
-                && resourcePackManager.shouldSendOnJoin()) {
+        // HammerSharedLib 1.0.2 reports isEnabled() backwards when a pack
+        // request is configured. Register based on the send-on-join setting;
+        // sendToPlayer() safely no-ops when resource-pack delivery is disabled.
+        if (resourcePackManager.shouldSendOnJoin()) {
 
             getServer().getPluginManager().registerEvents(
-                    new ResourcePackListener(resourcePackManager),
+                    new ResourcePackListener(this, resourcePackManager),
                     this
             );
         }
