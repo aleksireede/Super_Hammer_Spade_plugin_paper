@@ -10,6 +10,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.PrepareAnvilEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.inventory.PrepareSmithingEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
@@ -52,6 +53,11 @@ public final class ItemLoreUpdater implements Listener {
     }
 
     @EventHandler
+    public void onCraftPreview(PrepareItemCraftEvent event) {
+        refreshResult(event.getInventory().getResult(), event.getInventory()::setResult);
+    }
+
+    @EventHandler
     public void onJoin(PlayerJoinEvent event) {
         plugin.getServer().getScheduler().runTask(plugin, () -> refreshInventory(event.getPlayer()));
     }
@@ -89,8 +95,13 @@ public final class ItemLoreUpdater implements Listener {
         if (meta == null) return;
 
         List<Component> lore = new ArrayList<>();
-        String action = type == CustomToolType.HAMMER ? "Mine" : "Dig";
-        if (plugin.getConfig().getBoolean("write_description", true)) lore.addAll(ItemLore.tool_lore(action));
+        if (plugin.getConfig().getBoolean("write_description", true)) {
+            switch (type) {
+                case HAMMER -> lore.addAll(ItemLore.tool_lore("Mine"));
+                case SPADE -> lore.addAll(ItemLore.tool_lore("Dig"));
+                case DRILL -> lore.addAll(ItemLore.drill_lore());
+            }
+        }
         if (!meta.getEnchants().isEmpty()) {
             if (!lore.isEmpty()) lore.add(Component.empty());
             meta.getEnchants().forEach((enchantment, level) -> lore.add(SharedText.miniMessage(

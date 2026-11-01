@@ -51,6 +51,26 @@ public enum CustomToolType {
                 " | "
             };
         }
+    },
+    DRILL("drill", "Drill") {
+        @Override
+        public boolean matchesBaseTool(final Material material) {
+            return material.isLegacy() || !Tag.ITEMS_PICKAXES.isTagged(material);
+        }
+
+        @Override
+        public boolean canMine(final Block block, final ItemStack tool) {
+            return block.getType() == Material.BEDROCK;
+        }
+
+        @Override
+        public String[] getRecipeShape() {
+            return new String[]{
+                    "*|*",
+                    "*|*",
+                    "***"
+            };
+        }
     };
 
     private final String keySuffix;

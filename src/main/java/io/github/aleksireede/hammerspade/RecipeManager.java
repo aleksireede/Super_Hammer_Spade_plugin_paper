@@ -29,12 +29,14 @@ public class RecipeManager implements Listener {
 
     public RecipeManager(
         final HashMap<Material, NamespacedKey> hammerRecipeMap,
-        final HashMap<Material, NamespacedKey> spadeRecipeMap
+        final HashMap<Material, NamespacedKey> spadeRecipeMap,
+        final HashMap<Material, NamespacedKey> drillRecipeMap
     ) {
         this.recipeMapper = new HashMap<>();
 
         this.addRecipeMappings(hammerRecipeMap);
         this.addRecipeMappings(spadeRecipeMap);
+        this.addRecipeMappings(drillRecipeMap);
     }
 
     /**

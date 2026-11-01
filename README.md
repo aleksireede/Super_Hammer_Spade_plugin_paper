@@ -4,7 +4,9 @@ A hammer is a tool that breaks blocks in a 3x3 plane. It is a special type of pi
 
 A spade is the shovel equivalent and breaks shovel-mineable blocks in the same 3x3 plane.
 
-There is a hammer and a spade for every tool tier: wooden, stone, iron, golden, diamond, and netherite.
+A drill breaks only the targeted bedrock block.
+
+There is a hammer and a spade for every tool tier: wooden, stone, iron, golden, diamond, and netherite. Drills use pickaxe tiers and can also be upgraded to netherite.
 
 ## Features
 - Unlockable recipes

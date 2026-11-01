@@ -2,7 +2,6 @@ package io.github.aleksireede.hammerspade;
 
 import io.github.aleksireede.hammershared.SharedItemTextStyle;
 import io.github.aleksireede.hammershared.SharedItemUpdater;
-import io.github.aleksireede.hammershared.SharedResourcePackManager;
 import io.github.aleksireede.hammershared.SharedText;
 import io.github.aleksireede.hammerspade.common.ResourcePackListener;
 import io.github.aleksireede.hammerspade.common.config;
@@ -22,10 +21,12 @@ public class Hammer extends JavaPlugin {
     private static Hammer instance;
     private final NamespacedKey hammerKey;
     private final NamespacedKey spadeKey;
+    private final NamespacedKey drillKey;
 
     public Hammer() {
         this.hammerKey = new NamespacedKey(this, "is_hammer");
         this.spadeKey = new NamespacedKey(this, "is_spade");
+        this.drillKey = new NamespacedKey(this, "is_drill");
     }
 
     @Override
@@ -40,8 +41,6 @@ public class Hammer extends JavaPlugin {
         loadConfiguration();
         registerItemLore();
 
-        SharedResourcePackManager resourcePackManager = createResourcePackManager();
-
         Random random = new Random();
 
         RecipeMaps recipes = registerRecipes();
@@ -50,7 +49,7 @@ public class Hammer extends JavaPlugin {
         FauxBlockDamage fauxBlockDamage = setupFauxBlockDamage(random);
         setupBlockOutlineHighlighter();
 
-        registerListeners(resourcePackManager, recipes, fauxBlockDamage, random);
+        registerListeners(recipes, fauxBlockDamage, random);
         registerCommands(recipes);
     }
 
@@ -70,16 +69,9 @@ public class Hammer extends JavaPlugin {
 
         // Spade
         SharedItemUpdater.registerLore(11, () -> ItemLore.tool_lore("Dig"));
-    }
 
-    /* Resource pack sender */
-    private SharedResourcePackManager createResourcePackManager() {
-        SharedResourcePackManager resourcePackManager =
-                SharedResourcePackManager.fromConfig(this, getConfig());
-
-        resourcePackManager.logState();
-
-        return resourcePackManager;
+        // Drill
+        SharedItemUpdater.registerLore(12, ItemLore::drill_lore);
     }
 
     /* Crafting table recipes*/
@@ -92,7 +84,10 @@ public class Hammer extends JavaPlugin {
         HashMap<Material, NamespacedKey> spadeRecipes =
                 craftingManager.registerRecipes(CustomToolType.SPADE);
 
-        return new RecipeMaps(hammerRecipes, spadeRecipes);
+        HashMap<Material, NamespacedKey> drillRecipes =
+                craftingManager.registerRecipes(CustomToolType.DRILL);
+
+        return new RecipeMaps(hammerRecipes, spadeRecipes, drillRecipes);
     }
 
     /* Netherite upgrade recipes */
@@ -108,9 +103,12 @@ public class Hammer extends JavaPlugin {
                 upgradeManager.registerUpgradeRecipes(
                         CustomToolType.SPADE
                 );
+        HashMap<Material, NamespacedKey> drillUpgrades =
+                upgradeManager.registerUpgradeRecipes(CustomToolType.DRILL);
 
         recipes.hammerRecipes().putAll(hammerUpgrades);
         recipes.spadeRecipes().putAll(spadeUpgrades);
+        recipes.drillRecipes().putAll(drillUpgrades);
     }
 
     private FauxBlockDamage setupFauxBlockDamage(Random random) {
@@ -133,7 +131,6 @@ public class Hammer extends JavaPlugin {
     }
 
     private void registerListeners(
-            SharedResourcePackManager resourcePackManager,
             RecipeMaps recipes,
             FauxBlockDamage fauxBlockDamage,
             Random random
@@ -153,21 +150,13 @@ public class Hammer extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new RecipeManager(
                         recipes.hammerRecipes(),
-                        recipes.spadeRecipes()
+                        recipes.spadeRecipes(),
+                        recipes.drillRecipes()
                 ),
                 this
         );
 
-        // HammerSharedLib 1.0.2 reports isEnabled() backwards when a pack
-        // request is configured. Register based on the send-on-join setting;
-        // sendToPlayer() safely no-ops when resource-pack delivery is disabled.
-        if (resourcePackManager.shouldSendOnJoin()) {
-
-            getServer().getPluginManager().registerEvents(
-                    new ResourcePackListener(this, resourcePackManager),
-                    this
-            );
-        }
+        getServer().getPluginManager().registerEvents(new ResourcePackListener(this), this);
     }
 
     /* Give command */
@@ -175,12 +164,13 @@ public class Hammer extends JavaPlugin {
         GiveCommand giveCommand = new GiveCommand(
                 this,
                 recipes.hammerRecipes(),
-                recipes.spadeRecipes()
+                recipes.spadeRecipes(),
+                recipes.drillRecipes()
         );
 
         registerCommand(
                 "givehammer",
-                "Give players hammers or spades.",
+                "Give players hammers, spades, or drills.",
                 List.of(),
                 giveCommand
         );
@@ -224,7 +214,11 @@ public class Hammer extends JavaPlugin {
                 .setName(SharedText.miniMessage(SharedItemUpdater.getColorFromRarity(rarity) + "<!italic>" + displayName))
                 .setPersistentData(this.getToolKey(type), PersistentDataType.BOOLEAN, true)
                 .setPersistentData(config.customIdKey(), PersistentDataType.INTEGER,
-                        type == CustomToolType.HAMMER ? 10 : 11)
+                        switch (type) {
+                            case HAMMER -> 10;
+                            case SPADE -> 11;
+                            case DRILL -> 12;
+                        })
                 .setPersistentData(config.rarityKey(), PersistentDataType.STRING, rarity.toLowerCase())
                 .setPersistentData(config.itemTypeKey(), PersistentDataType.STRING, itemType);
 
@@ -269,6 +263,7 @@ public class Hammer extends JavaPlugin {
         return switch (type) {
             case HAMMER -> this.hammerKey;
             case SPADE -> this.spadeKey;
+            case DRILL -> this.drillKey;
         };
     }
 
@@ -278,7 +273,8 @@ public class Hammer extends JavaPlugin {
 
     private record RecipeMaps(
             HashMap<Material, NamespacedKey> hammerRecipes,
-            HashMap<Material, NamespacedKey> spadeRecipes
+            HashMap<Material, NamespacedKey> spadeRecipes,
+            HashMap<Material, NamespacedKey> drillRecipes
     ) {
     }
 }

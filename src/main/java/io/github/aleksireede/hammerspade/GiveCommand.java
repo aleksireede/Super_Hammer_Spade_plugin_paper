@@ -30,15 +30,18 @@ public class GiveCommand implements BasicCommand {
     public GiveCommand(
         final Hammer plugin,
         final HashMap<Material, NamespacedKey> hammerRecipeKeyMap,
-        final HashMap<Material, NamespacedKey> spadeRecipeKeyMap
+        final HashMap<Material, NamespacedKey> spadeRecipeKeyMap,
+        final HashMap<Material, NamespacedKey> drillRecipeKeyMap
     ) {
         this.plugin = plugin;
         this.toolMap = new HashMap<>();
 
         this.addTools(hammerRecipeKeyMap, CustomToolType.HAMMER);
         this.addTools(spadeRecipeKeyMap, CustomToolType.SPADE);
+        this.addTools(drillRecipeKeyMap, CustomToolType.DRILL);
         this.toolMap.put("NETHERITE_HAMMER", new ToolDefinition(Material.NETHERITE_PICKAXE, CustomToolType.HAMMER));
         this.toolMap.put("NETHERITE_SPADE", new ToolDefinition(Material.NETHERITE_SHOVEL, CustomToolType.SPADE));
+        this.toolMap.put("NETHERITE_DRILL", new ToolDefinition(Material.NETHERITE_PICKAXE, CustomToolType.DRILL));
     }
 
     @Override

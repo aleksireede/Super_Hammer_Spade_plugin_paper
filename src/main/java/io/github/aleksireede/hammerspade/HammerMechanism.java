@@ -123,6 +123,8 @@ public class HammerMechanism implements Listener {
         final ItemStack tool = equipment.getItemInMainHand();
         final CustomToolType toolType = this.plugin.getCustomToolType(tool);
         if (toolType == null) return;
+        // Drills break only the targeted bedrock; they do not run area mining.
+        if (toolType == CustomToolType.DRILL) return;
 
         final ItemMeta meta = tool.getItemMeta();
         if (!(meta instanceof Damageable damageableMeta)) return;
@@ -230,6 +232,26 @@ public class HammerMechanism implements Listener {
         }
 
         data.adjacentCount = i;
+    }
+
+    /** Lets a drill finish mining bedrock, whose vanilla hardness is unbreakable. */
+    @EventHandler(ignoreCancelled = true)
+    public void drillBedrock(final BlockDamageEvent event) {
+        if (event.getBlock().getType() != Material.BEDROCK) return;
+        if (this.plugin.getCustomToolType(event.getItemInHand()) != CustomToolType.DRILL) return;
+        event.setInstaBreak(true);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void dropDrillBedrock(final BlockBreakEvent event) {
+        if (event.getBlock().getType() != Material.BEDROCK) return;
+        if (this.plugin.getCustomToolType(event.getPlayer().getInventory().getItemInMainHand()) != CustomToolType.DRILL) return;
+
+        event.setDropItems(false);
+        event.getBlock().getWorld().dropItemNaturally(
+                event.getBlock().getLocation().add(0.5, 0.5, 0.5),
+                new ItemStack(Material.BEDROCK)
+        );
     }
 
     /**
@@ -361,10 +383,8 @@ public class HammerMechanism implements Listener {
      * @return if the block can activate the hammer's breaking ability
      */
     private boolean canBlockActivateAbility(final Block block, final ItemStack tool, final CustomToolType toolType) {
-        return (
-            toolType.canMine(block, tool) &&
-            block.getType().getHardness() != Material.BEDROCK.getHardness() // Safety check - cannot be equal to bedrock's hardness
-        );
+        if (!toolType.canMine(block, tool)) return false;
+        return block.getType() != Material.BEDROCK || toolType == CustomToolType.DRILL;
     }
 
     private boolean canFlattenToPath(final Block block) {

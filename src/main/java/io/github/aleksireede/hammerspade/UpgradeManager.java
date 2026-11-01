@@ -68,6 +68,7 @@ public class UpgradeManager {
         return switch (toolType) {
             case HAMMER -> Material.DIAMOND_PICKAXE;
             case SPADE -> Material.DIAMOND_SHOVEL;
+            case DRILL -> Material.DIAMOND_PICKAXE;
         };
     }
 
@@ -75,6 +76,7 @@ public class UpgradeManager {
         return switch (toolType) {
             case HAMMER -> Material.NETHERITE_PICKAXE;
             case SPADE -> Material.NETHERITE_SHOVEL;
+            case DRILL -> Material.NETHERITE_PICKAXE;
         };
     }
 }

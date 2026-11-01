@@ -28,7 +28,7 @@ public class BlockOutlineHighlighter extends BukkitRunnable {
             ItemStack tool = player.getInventory().getItemInMainHand();
             CustomToolType toolType = plugin.getCustomToolType(tool);
 
-            if (toolType == null || player.isSneaking()) {
+            if (toolType == null || toolType == CustomToolType.DRILL || player.isSneaking()) {
                 continue;
             }
 
@@ -39,6 +39,7 @@ public class BlockOutlineHighlighter extends BukkitRunnable {
             }
 
             Block targetBlock = rayTrace.getHitBlock();
+            if (targetBlock.getType() == org.bukkit.Material.BEDROCK) continue;
             // Use the block face to determine plane orientation
             int planeIndex = getPlaneIndexFromFace(rayTrace.getHitBlockFace());
 

@@ -1,6 +1,6 @@
 name: HammerSpade
 author: AleksiReede
-description: Adds craftable hammer and spade tools that dig in a 3x3 radius
+description: Adds craftable hammer, spade, and drill tools with area abilities
 version: '${project.version}'
 main: io.github.aleksireede.hammerspade.Hammer
 api-version: '1.21.11'

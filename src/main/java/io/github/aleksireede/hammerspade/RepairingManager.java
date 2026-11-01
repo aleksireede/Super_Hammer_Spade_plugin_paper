@@ -172,6 +172,8 @@ public class RepairingManager implements Listener {
                 resultMeta.lore(ItemLore.tool_lore("Mine"));
             } else if (toolType == CustomToolType.SPADE) {
                 resultMeta.lore(ItemLore.tool_lore("Dig"));
+            } else if (toolType == CustomToolType.DRILL) {
+                resultMeta.lore(ItemLore.drill_lore());
             }
         }
 
