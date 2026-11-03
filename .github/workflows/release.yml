@@ -35,4 +35,4 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           generate_release_notes: true
-          files: target/Hammer.jar
+          files: target/Super_Hammer_Spade_plugin_paper.jar
