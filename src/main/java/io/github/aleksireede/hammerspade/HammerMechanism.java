@@ -27,6 +27,7 @@ import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.util.RayTraceResult;
 import org.bukkit.util.Vector;
 
@@ -52,6 +53,7 @@ public class HammerMechanism implements Listener {
     private final Hammer plugin;
     private final Random random;
     private final FauxBlockDamage fauxBlockDamage;
+    private final org.bukkit.NamespacedKey drillCooldownKey;
 
     private final Vector[][] planeOffsets;
     
@@ -64,6 +66,7 @@ public class HammerMechanism implements Listener {
         this.plugin = plugin;
         this.random = random;
         this.fauxBlockDamage = fauxBlockDamage;
+        this.drillCooldownKey = new org.bukkit.NamespacedKey(plugin, "drill_bedrock_cooldown_until");
 
         //Load options from config
         this.raytraceDistance = plugin.getConfig().getDouble("raytrace_distance", 10.0);
@@ -123,8 +126,11 @@ public class HammerMechanism implements Listener {
         final ItemStack tool = equipment.getItemInMainHand();
         final CustomToolType toolType = this.plugin.getCustomToolType(tool);
         if (toolType == null) return;
-        // Drills break only the targeted bedrock; they do not run area mining.
-        if (toolType == CustomToolType.DRILL) return;
+        if (toolType == CustomToolType.DRILL) {
+            if (targetBlock.getType() == Material.BEDROCK) return;
+            useDrillArea(player, targetBlock, tool, creativeMode);
+            return;
+        }
 
         final ItemMeta meta = tool.getItemMeta();
         if (!(meta instanceof Damageable damageableMeta)) return;
@@ -240,6 +246,84 @@ public class HammerMechanism implements Listener {
         if (event.getBlock().getType() != Material.BEDROCK) return;
         if (this.plugin.getCustomToolType(event.getItemInHand()) != CustomToolType.DRILL) return;
         event.setInstaBreak(true);
+    }
+
+    private void useDrillArea(Player player, Block targetBlock, ItemStack tool, boolean creativeMode) {
+        if (player.isSneaking()) return;
+        int plane = getPlaneIndex(player, targetBlock);
+        if (plane == -1) return;
+        ItemMeta meta = tool.getItemMeta();
+        if (!(meta instanceof Damageable damageable)) return;
+        int height = meta.getPersistentDataContainer().getOrDefault(
+                this.plugin.getDrillHeightKey(), PersistentDataType.INTEGER, 3);
+        int unbreaking = damageable.getEnchantLevel(Enchantment.UNBREAKING);
+        int damage = damageable.getDamage();
+        int maxDamage = tool.getType().getMaxDurability() - 1;
+        int count = 0;
+        // Three columns wide; height is measured along the vertical axis.
+        for (int y = 0; y < height; y++) {
+            for (int x = -1; x <= 1; x++) {
+                if (damage >= maxDamage) break;
+                if (x == 0 && y == 0) continue;
+                Vector offset = drillOffset(plane, x, y);
+                Block adjacent = targetBlock.getRelative(offset.getBlockX(), offset.getBlockY(), offset.getBlockZ());
+                if (adjacent.getType() == Material.BEDROCK) continue;
+                if (!isBlockAreaMineable(adjacent, tool, targetBlock.getType().getHardness() + this.hardnessBuffer, CustomToolType.DRILL)) continue;
+                adjacent.breakNaturally(!creativeMode ? tool : new ItemStack(Material.AIR));
+                count++;
+                if (!meta.isUnbreakable() && !creativeMode && (unbreaking == 0 || random.nextInt(unbreaking + 1) == 0)) damage++;
+            }
+        }
+        if (creativeMode) return;
+        if (damage >= maxDamage) tool.setAmount(tool.getAmount() - 1);
+        else { damageable.setDamage(damage); tool.setItemMeta(damageable); }
+        player.setExhaustion(player.getExhaustion() + count * BLOCK_BREAK_EXHAUSTION * this.exhaustionMultiplier);
+    }
+
+    private Vector drillOffset(int plane, int width, int y) {
+        return switch (plane) {
+            case NORTH_SOUTH -> new Vector(width, y, 0);
+            case EAST_WEST -> new Vector(0, y, width);
+            default -> new Vector(width, 0, y);
+        };
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void enforceDrillCooldown(BlockBreakEvent event) {
+        if (event.getBlock().getType() != Material.BEDROCK) return;
+        ItemStack tool = event.getPlayer().getInventory().getItemInMainHand();
+        if (this.plugin.getCustomToolType(tool) != CustomToolType.DRILL) return;
+        Player player = event.getPlayer();
+        long now = System.currentTimeMillis();
+        long until = player.getPersistentDataContainer().getOrDefault(this.drillCooldownKey, PersistentDataType.LONG, 0L);
+        if (now < until) {
+            event.setCancelled(true);
+            player.sendMessage("Your drill is cooling down for " + ((until - now + 59_999) / 60_000) + " more minute(s).");
+            return;
+        }
+        ItemMeta meta = tool.getItemMeta();
+        String rarity = meta == null ? "common" : meta.getPersistentDataContainer().getOrDefault(
+                io.github.aleksireede.hammerspade.common.config.rarityKey(), PersistentDataType.STRING, "common");
+        long minutes = switch (rarity.toLowerCase(java.util.Locale.ROOT)) {
+            case "uncommon" -> 45; case "rare" -> 30; case "epic" -> 15; case "legendary" -> 5; default -> 60;
+        };
+        player.getPersistentDataContainer().set(this.drillCooldownKey, PersistentDataType.LONG, now + minutes * 60_000L);
+    }
+
+    @EventHandler(ignoreCancelled = true)
+    public void toggleDrillHeight(PlayerInteractEvent event) {
+        if (event.getHand() != EquipmentSlot.HAND || event.getAction() != Action.RIGHT_CLICK_AIR && event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
+        ItemStack tool = event.getItem();
+        if (this.plugin.getCustomToolType(tool) != CustomToolType.DRILL) return;
+        assert tool != null;
+        ItemMeta meta = tool.getItemMeta();
+        if (meta == null) return;
+        int current = meta.getPersistentDataContainer().getOrDefault(this.plugin.getDrillHeightKey(), PersistentDataType.INTEGER, 3);
+        int next = current == 3 ? 6 : 3;
+        meta.getPersistentDataContainer().set(this.plugin.getDrillHeightKey(), PersistentDataType.INTEGER, next);
+        tool.setItemMeta(meta);
+        event.setCancelled(true);
+        event.getPlayer().sendMessage("Drill mining height: " + next + " blocks.");
     }
 
     @EventHandler(ignoreCancelled = true)

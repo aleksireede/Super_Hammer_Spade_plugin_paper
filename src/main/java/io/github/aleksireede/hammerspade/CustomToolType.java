@@ -60,7 +60,10 @@ public enum CustomToolType {
 
         @Override
         public boolean canMine(final Block block, final ItemStack tool) {
-            return block.getType() == Material.BEDROCK;
+            return block.getType() == Material.BEDROCK || (
+                Tag.MINEABLE_PICKAXE.isTagged(block.getType()) &&
+                block.getBlockData().isPreferredTool(tool)
+            );
         }
 
         @Override

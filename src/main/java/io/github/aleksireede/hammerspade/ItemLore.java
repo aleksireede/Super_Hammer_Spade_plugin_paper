@@ -25,8 +25,10 @@ public final class ItemLore {
 
     public static List<Component> drill_lore() {
         List<Component> lore = new ArrayList<>();
-        lore.add(SharedText.miniMessage("<!i><gold>Ability: Break bedrock"));
-        lore.add(SharedText.miniMessage("<!i><white>Breaks the targeted bedrock block."));
+        lore.add(SharedText.miniMessage("<!i><gold>Ability: Drill"));
+        lore.add(SharedText.miniMessage("<!i><white>Breaks a 3-wide area of pickaxe blocks."));
+        lore.add(SharedText.miniMessage("<!i><white>Right-click to toggle mining height between 3 and 6."));
+        lore.add(SharedText.miniMessage("<!i><white>Bedrock can be mined once per rarity cooldown."));
         return lore;
     }
 

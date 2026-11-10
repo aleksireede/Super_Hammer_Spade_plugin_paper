@@ -22,11 +22,13 @@ public class Hammer extends JavaPlugin {
     private final NamespacedKey hammerKey;
     private final NamespacedKey spadeKey;
     private final NamespacedKey drillKey;
+    private final NamespacedKey drillHeightKey;
 
     public Hammer() {
         this.hammerKey = new NamespacedKey(this, "is_hammer");
         this.spadeKey = new NamespacedKey(this, "is_spade");
         this.drillKey = new NamespacedKey(this, "is_drill");
+        this.drillHeightKey = new NamespacedKey(this, "drill_height");
     }
 
     @Override
@@ -266,6 +268,8 @@ public class Hammer extends JavaPlugin {
             case DRILL -> this.drillKey;
         };
     }
+
+    public NamespacedKey getDrillHeightKey() { return this.drillHeightKey; }
 
     public boolean isUnsupportedBaseTool(final Material material) {
         return CustomToolType.HAMMER.matchesBaseTool(material) && CustomToolType.SPADE.matchesBaseTool(material);
