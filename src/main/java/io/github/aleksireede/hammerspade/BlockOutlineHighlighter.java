@@ -23,12 +23,12 @@ public class BlockOutlineHighlighter extends BukkitRunnable {
 
     @Override
     public void run() {
-        // Update outline for each online player holding hammer/spade
+        // Update outline for each online player holding an area mining tool
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             ItemStack tool = player.getInventory().getItemInMainHand();
             CustomToolType toolType = plugin.getCustomToolType(tool);
 
-            if (toolType == null || toolType == CustomToolType.DRILL || player.isSneaking()) {
+            if (toolType == null || player.isSneaking()) {
                 continue;
             }
 
@@ -39,7 +39,7 @@ public class BlockOutlineHighlighter extends BukkitRunnable {
             }
 
             Block targetBlock = rayTrace.getHitBlock();
-            if (targetBlock.getType() == org.bukkit.Material.BEDROCK) continue;
+            if (targetBlock.getType() == org.bukkit.Material.BEDROCK && toolType != CustomToolType.DRILL) continue;
             // Use the block face to determine plane orientation
             int planeIndex = getPlaneIndexFromFace(rayTrace.getHitBlockFace());
 
@@ -47,13 +47,37 @@ public class BlockOutlineHighlighter extends BukkitRunnable {
                 continue;
             }
 
-            // Get outer edge blocks
-            Vector[] outerBlocks = getOuterEdgeBlocks(planeIndex);
+            Vector[] outerBlocks;
+            if (toolType == CustomToolType.DRILL) {
+                ItemStack item = player.getInventory().getItemInMainHand();
+                int size = item.getItemMeta().getPersistentDataContainer().getOrDefault(
+                        plugin.getDrillHeightKey(), org.bukkit.persistence.PersistentDataType.INTEGER, 3);
+                outerBlocks = getDrillGrid(planeIndex, size);
+            } else {
+                outerBlocks = getOuterEdgeBlocks(planeIndex);
+            }
             Location baseLocation = targetBlock.getLocation().clone();
 
             // Draw outline
             drawOutline(baseLocation, outerBlocks);
         }
+    }
+
+    private Vector[] getDrillGrid(int planeIndex, int size) {
+        int start = -(size / 2);
+        Vector[] offsets = new Vector[size * size - 1];
+        int index = 0;
+        for (int y = start; y < start + size; y++) {
+            for (int x = start; x < start + size; x++) {
+                if (x == 0 && y == 0) continue;
+                offsets[index++] = switch (planeIndex) {
+                    case 0 -> new Vector(x, y, 0);
+                    case 1 -> new Vector(0, y, x);
+                    default -> new Vector(x, 0, y);
+                };
+            }
+        }
+        return offsets;
     }
 
     private void drawOutline(Location baseLocation, Vector[] outerBlocks) {

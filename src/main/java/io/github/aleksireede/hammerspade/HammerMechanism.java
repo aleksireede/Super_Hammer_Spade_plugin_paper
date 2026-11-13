@@ -260,9 +260,10 @@ public class HammerMechanism implements Listener {
         int damage = damageable.getDamage();
         int maxDamage = tool.getType().getMaxDurability() - 1;
         int count = 0;
-        // Three columns wide; height is measured along the vertical axis.
-        for (int y = 0; y < height; y++) {
-            for (int x = -1; x <= 1; x++) {
+        int start = -(height / 2);
+        // Use a centered square grid so mining and the preview use the same 3x3/6x6 area.
+        for (int y = start; y < start + height; y++) {
+            for (int x = start; x < start + height; x++) {
                 if (damage >= maxDamage) break;
                 if (x == 0 && y == 0) continue;
                 Vector offset = drillOffset(plane, x, y);
@@ -319,11 +320,11 @@ public class HammerMechanism implements Listener {
         ItemMeta meta = tool.getItemMeta();
         if (meta == null) return;
         int current = meta.getPersistentDataContainer().getOrDefault(this.plugin.getDrillHeightKey(), PersistentDataType.INTEGER, 3);
-        int next = current == 3 ? 6 : 3;
+        int next = current >= 3 && current < 6 ? current + 1 : 3;
         meta.getPersistentDataContainer().set(this.plugin.getDrillHeightKey(), PersistentDataType.INTEGER, next);
         tool.setItemMeta(meta);
         event.setCancelled(true);
-        event.getPlayer().sendMessage("Drill mining height: " + next + " blocks.");
+        event.getPlayer().sendMessage("Drill mining area: " + next + "x" + next + ".");
     }
 
     @EventHandler(ignoreCancelled = true)
